@@ -1,0 +1,29 @@
+---
+environment:
+  domains:
+    local: "rsk.al"
+    public: "raskal.io"
+  localization:
+    timezone: "America/Vancouver"
+  
+  ipam:
+    subnets:
+      - name: "LAN_MAIN"
+        cidr: "10.0.0.0/24"
+        gateway: "10.0.0.1"
+        dhcp_pool:
+          start: "10.0.0.100"
+          stop: "10.0.0.200"
+          dns_servers:
+            - "10.0.0.1"
+
+  global_accounts:
+    - username: "root"
+      role: "Root"
+      directory: "/root"
+      status: "Active"
+    - username: "raskal"
+      role: "Admin"
+      directory: "/home/raskal"
+      linked_email: "labs@raskal.io"
+      status: "Active"

@@ -1,0 +1,20 @@
+---
+service_profiles:
+  edge_router:
+    description: "Modular Linux routing and DNS pipeline"
+    packages:
+      - "kea-dhcp4"
+      - "unbound"
+      - "dnscrypt-proxy"
+      - "nftables"
+    configurations:
+      - service: "kea-dhcp4"
+        target_dest: "/etc/kea/kea-dhcp4.conf"
+      - service: "unbound"
+        target_dest: "/etc/unbound/unbound.conf"
+      - service: "dnscrypt-proxy"
+        target_dest: "/etc/dnscrypt-proxy/dnscrypt-proxy.toml"
+      - service: "nftables"
+        target_dest: "/etc/nftables.conf"
+      - service: "systemd-networkd"
+        target_dest: "/etc/systemd/network/"

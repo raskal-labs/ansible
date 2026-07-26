@@ -1,8 +1,0 @@
----
-- name: Homelab Infrastructure Playbook
-  hosts: all
-  gather_facts: true
-  tasks:
-    - name: Placeholder task
-      ansible.builtin.debug:
-        msg: "Ready for execution"

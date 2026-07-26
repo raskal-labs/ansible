@@ -14,10 +14,30 @@
         - firewalld
         - systemd-resolved
 
+    - name: Remove systemd-resolved resolv.conf symlink
+      ansible.builtin.file:
+        path: /etc/resolv.conf
+        state: absent
+
+    - name: Create static resolv.conf pointing to localhost
+      ansible.builtin.copy:
+        dest: /etc/resolv.conf
+        content: "nameserver 127.0.0.1\n"
+        owner: root
+        group: root
+        mode: '0644'
+
     - name: Install required packages
-      ansible.builtin.dnf:
-        name: "{{ packages }}"
-        state: present
+      block:
+        - name: Install required packages using dnf5
+          ansible.builtin.dnf5:
+            name: "{{ packages }}"
+            state: present
+      rescue:
+        - name: Fallback to dnf if dnf5 is not available
+          ansible.builtin.dnf:
+            name: "{{ packages }}"
+            state: present
 
     - name: Set system hostname
       ansible.builtin.hostname:

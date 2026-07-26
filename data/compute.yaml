@@ -53,6 +53,7 @@ computing_nodes:
     operating_system: "Fedora 40 Server Minimal"
     assigned_profile: "edge_router"
     software_stack:
+      - "systemd-networkd"
       - "kea-dhcp4"
       - "unbound"
       - "dnscrypt-proxy"
