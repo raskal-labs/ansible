@@ -21,4 +21,3 @@ Welcome to the **Raskal Labs** homelab Infrastructure as Code (IaC) repository. 
 ## Getting Started
 
 To bootstrap your local development environment and set up the required Git hooks and dependencies, run:
-

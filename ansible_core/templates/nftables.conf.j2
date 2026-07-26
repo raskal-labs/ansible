@@ -1,0 +1,19 @@
+table ip global {
+    chain inbound {
+        type filter hook input priority 0; policy drop;
+        ct state established,related accept
+        iifname "lo" accept
+        iifname "{{ iface_lan }}" accept
+    }
+
+    chain forward {
+        type filter hook forward priority 0; policy drop;
+        ct state established,related accept
+        iifname "{{ iface_lan }}" oifname "{{ iface_wan }}" accept
+    }
+
+    chain postrouting {
+        type nat hook postrouting priority 100; policy accept;
+        oifname "{{ iface_wan }}" masquerade
+    }
+}
