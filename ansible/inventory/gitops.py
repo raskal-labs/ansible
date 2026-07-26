@@ -17,31 +17,60 @@ def main():
 
     env_data = load_yaml(os.path.join(data_dir, 'environment.yaml'))
     compute_data = load_yaml(os.path.join(data_dir, 'compute.yaml'))
-    network_data = load_yaml(os.path.join(data_dir, 'network.yaml'))
     services_data = load_yaml(os.path.join(data_dir, 'services.yaml'))
+    # network_data contains APs/Switches - keeping it for future use if needed
+    network_data = load_yaml(os.path.join(data_dir, 'network.yaml'))
 
-    # Extract router config
-    net_infra = network_data.get('networking_infrastructure', {})
-    router_cfg = net_infra.get('ultra-64', {})
+    # --- 1. Extract Environment & IPAM Data ---
+    env_root = env_data.get('environment', {})
+    timezone = env_root.get('localization', {}).get('timezone', 'UTC')
+    domain_local = env_root.get('domains', {}).get('local', 'lan')
 
-    # Default values if not specified
-    timezone = env_data.get('timezone', 'UTC')
-    domain_local = env_data.get('domain_local', 'lan')
+    # Find the main LAN subnet for DHCP config
+    subnets = env_root.get('ipam', {}).get('subnets', [])
+    lan_subnet = next((s for s in subnets if s.get('name') == 'LAN_MAIN'), {})
+    
+    dhcp_subnet = lan_subnet.get('cidr', '192.168.1.0/24')
+    gateway = lan_subnet.get('gateway', '192.168.1.1')
+    
+    # Extract the CIDR suffix (e.g. "24") to build the LAN IP string
+    cidr_suffix = dhcp_subnet.split('/')[-1] if '/' in dhcp_subnet else '24'
+    iface_lan_ip = f"{gateway}/{cidr_suffix}"
 
+    dhcp_pool = lan_subnet.get('dhcp_pool', {})
+    dhcp_range_start = dhcp_pool.get('start', '192.168.1.100')
+    dhcp_range_end = dhcp_pool.get('stop', '192.168.1.200')
+
+    # --- 2. Extract Compute Data (The Router Hardware) ---
+    nodes = compute_data.get('computing_nodes', [])
+    router_cfg = next((n for n in nodes if n.get('hostname') == 'ultra-64'), {})
+
+    ansible_host = router_cfg.get('ip_address', '127.0.0.1')
+    mac_address = router_cfg.get('mac_address', '00:00:00:00:00:00')
+
+    interfaces = router_cfg.get('connectivity', {}).get('os_interfaces', {})
+    iface_wan = interfaces.get('wan', {}).get('kernel_name', 'eth0')
+    iface_lan = interfaces.get('lan', {}).get('kernel_name', 'eth1')
+
+    # --- 3. Extract Services Data ---
+    profile_name = router_cfg.get('assigned_profile', 'edge_router')
+    packages = services_data.get('service_profiles', {}).get(profile_name, {}).get('packages', ['kea-dhcp4', 'unbound', 'dnscrypt-proxy', 'nftables'])
+
+    # --- 4. Build Ansible Host Vars ---
     host_vars = {
-        "ansible_host": router_cfg.get('ansible_host', '127.0.0.1'),
+        "ansible_host": ansible_host,
         "timezone": timezone,
         "domain_local": domain_local,
-        "iface_wan_permanent_mac": router_cfg.get('iface_wan_permanent_mac', '00:00:00:00:00:00'),
-        "iface_wan_spoof_mac": router_cfg.get('iface_wan_spoof_mac', '00:00:00:00:00:00'),
-        "iface_wan": router_cfg.get('iface_wan', 'eth0'),
-        "iface_lan": router_cfg.get('iface_lan', 'eth1'),
-        "iface_lan_ip": router_cfg.get('iface_lan_ip', '192.168.1.1/24'),
-        "dhcp_subnet": router_cfg.get('dhcp_subnet', '192.168.1.0/24'),
-        "dhcp_range_start": router_cfg.get('dhcp_range_start', '192.168.1.100'),
-        "dhcp_range_end": router_cfg.get('dhcp_range_end', '192.168.1.200'),
-        "static_leases": router_cfg.get('static_leases', []),
-        "packages": services_data.get('services', {}).get('packages', ['kea', 'unbound', 'dnscrypt-proxy', 'nftables'])
+        "iface_wan_permanent_mac": mac_address,
+        "iface_wan_spoof_mac": mac_address, # Sets spoof to the same as permanent by default
+        "iface_wan": iface_wan,
+        "iface_lan": iface_lan,
+        "iface_lan_ip": iface_lan_ip,
+        "dhcp_subnet": dhcp_subnet,
+        "dhcp_range_start": dhcp_range_start,
+        "dhcp_range_end": dhcp_range_end,
+        "static_leases": [], # Future logic can parse this from network_data
+        "packages": packages
     }
 
     inventory = {

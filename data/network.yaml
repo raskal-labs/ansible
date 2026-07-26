@@ -1,1 +1,32 @@
-networking_infrastructure: {}
+---
+networking_infrastructure:
+  - hostname: "revolution"
+    make_model: "TP-Link Archer AXE75"
+    hardware_version: "v1.0"
+    firmware_version: "1.5.3"
+    type: "Wireless Access Point"
+    status: "Operational"
+    role: "AP / Bridge"
+    ip_address: "10.0.0.3"
+    mac_address: "24:2F:D0:D1:2E:30"
+    wan_mac_address: "24:2F:D0:D1:2E:31"
+    compliance: ""
+    wireless_networks:
+      - ssid: "rsk"
+        network_type: "Private"
+        bands_active: ["2.4GHz", "5GHz", "6GHz"]
+        bands_hidden: []
+    features: []
+
+  - hostname: "nx"
+    make_model: "D-Link Managed Switch"
+    hardware_version: "DGS-1100-08V2"
+    firmware_version: ""
+    type: "Managed Switch"
+    status: "Operational"
+    role: "Core Switch"
+    ip_address: "10.0.0.2"
+    mac_address: "00:11:22:33:44:66"
+    compliance: ""
+    wireless_networks: []
+    features: []
