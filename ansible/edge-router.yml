@@ -3,7 +3,7 @@
   hosts: ultra-64
   become: true
   tasks:
-    - name: Stop, disable, and mask NetworkManager and firewalld
+    - name: Stop, disable, and mask NetworkManager, firewalld, and systemd-resolved
       ansible.builtin.systemd:
         name: "{{ item }}"
         state: stopped
@@ -12,6 +12,7 @@
       loop:
         - NetworkManager
         - firewalld
+        - systemd-resolved
 
     - name: Install required packages
       ansible.builtin.dnf:
