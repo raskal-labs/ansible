@@ -4,7 +4,7 @@
   become: true
   tasks:
     - name: Stop, disable, and mask NetworkManager and firewalld
-      systemd:
+      ansible.builtin.systemd:
         name: "{{ item }}"
         state: stopped
         enabled: false
@@ -14,20 +14,20 @@
         - firewalld
 
     - name: Install required packages
-      dnf:
+      ansible.builtin.dnf:
         name: "{{ packages }}"
         state: present
 
     - name: Set system hostname
-      hostname:
+      ansible.builtin.hostname:
         name: ultra-64
 
     - name: Set system timezone
-      timezone:
+      ansible.builtin.timezone:
         name: "{{ timezone }}"
 
     - name: Copy systemd-networkd link configuration
-      template:
+      ansible.builtin.template:
         src: templates/10-wan.link.j2
         dest: /etc/systemd/network/10-wan.link
         owner: root
@@ -36,7 +36,7 @@
       notify: Restart systemd-networkd
 
     - name: Copy systemd-networkd WAN network configuration
-      template:
+      ansible.builtin.template:
         src: templates/20-wan.network.j2
         dest: /etc/systemd/network/20-wan.network
         owner: root
@@ -45,7 +45,7 @@
       notify: Restart systemd-networkd
 
     - name: Copy systemd-networkd LAN network configuration
-      template:
+      ansible.builtin.template:
         src: templates/30-lan.network.j2
         dest: /etc/systemd/network/30-lan.network
         owner: root
@@ -54,16 +54,16 @@
       notify: Restart systemd-networkd
 
     - name: Copy nftables configuration
-      template:
+      ansible.builtin.template:
         src: templates/nftables.conf.j2
-        dest: /etc/sysconfig/nftables.conf
+        dest: /etc/nftables.conf
         owner: root
         group: root
         mode: '0600'
       notify: Restart nftables
 
     - name: Copy Kea DHCPv4 configuration
-      template:
+      ansible.builtin.template:
         src: templates/kea-dhcp4.conf.j2
         dest: /etc/kea/kea-dhcp4.conf
         owner: root
@@ -72,7 +72,7 @@
       notify: Restart kea-dhcp4
 
     - name: Copy Unbound configuration
-      template:
+      ansible.builtin.template:
         src: templates/unbound.conf.j2
         dest: /etc/unbound/unbound.conf
         owner: root
@@ -81,7 +81,7 @@
       notify: Restart unbound
 
     - name: Copy dnscrypt-proxy configuration
-      template:
+      ansible.builtin.template:
         src: templates/dnscrypt-proxy.toml.j2
         dest: /etc/dnscrypt-proxy/dnscrypt-proxy.toml
         owner: root
@@ -90,7 +90,7 @@
       notify: Restart dnscrypt-proxy
 
     - name: Create systemd override directories
-      file:
+      ansible.builtin.file:
         path: "/etc/systemd/system/{{ item }}.service.d"
         state: directory
         owner: root
@@ -102,7 +102,7 @@
         - kea-dhcp4
 
     - name: Copy Unbound systemd override
-      template:
+      ansible.builtin.template:
         src: templates/unbound-override.conf.j2
         dest: /etc/systemd/system/unbound.service.d/override.conf
         owner: root
@@ -113,7 +113,7 @@
         - Restart unbound
 
     - name: Copy dnscrypt-proxy systemd override
-      template:
+      ansible.builtin.template:
         src: templates/dnscrypt-proxy-override.conf.j2
         dest: /etc/systemd/system/dnscrypt-proxy.service.d/override.conf
         owner: root
@@ -124,7 +124,7 @@
         - Restart dnscrypt-proxy
 
     - name: Copy Kea DHCPv4 systemd override
-      template:
+      ansible.builtin.template:
         src: templates/kea-override.conf.j2
         dest: /etc/systemd/system/kea-dhcp4.service.d/override.conf
         owner: root
@@ -135,13 +135,13 @@
         - Restart kea-dhcp4
 
     - name: Ensure systemd-networkd is enabled and started
-      systemd:
+      ansible.builtin.systemd:
         name: systemd-networkd
         state: started
         enabled: true
 
     - name: Ensure services are enabled and started
-      systemd:
+      ansible.builtin.systemd:
         name: "{{ item }}"
         state: started
         enabled: true
@@ -153,30 +153,30 @@
 
   handlers:
     - name: Reload systemd daemon
-      systemd:
+      ansible.builtin.systemd:
         daemon_reload: true
 
     - name: Restart systemd-networkd
-      systemd:
+      ansible.builtin.systemd:
         name: systemd-networkd
         state: restarted
 
     - name: Restart nftables
-      systemd:
+      ansible.builtin.systemd:
         name: nftables
         state: restarted
 
     - name: Restart kea-dhcp4
-      systemd:
+      ansible.builtin.systemd:
         name: kea-dhcp4
         state: restarted
 
     - name: Restart unbound
-      systemd:
+      ansible.builtin.systemd:
         name: unbound
         state: restarted
 
     - name: Restart dnscrypt-proxy
-      systemd:
+      ansible.builtin.systemd:
         name: dnscrypt-proxy
         state: restarted

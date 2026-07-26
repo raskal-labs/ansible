@@ -63,6 +63,7 @@ def main():
         "dhcp_subnet": "10.64.0.0/24",
         "dhcp_range_start": "10.64.0.100",
         "dhcp_range_end": "10.64.0.200",
+        "dhcp_dns_server": "10.64.0.1",
         "static_leases": static_leases,
         "packages": packages
     }

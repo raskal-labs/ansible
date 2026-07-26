@@ -20,7 +20,7 @@
                 },
                 {
                     "name": "domain-name-servers",
-                    "data": "{{ iface_lan_ip.split('/')[0] }}"
+                    "data": "{{ dhcp_dns_server }}"
                 },
                 {
                     "name": "domain-name",
@@ -32,7 +32,7 @@
                 {
                     "hw-address": "{{ lease.mac }}",
                     "ip-address": "{{ lease.ip }}",
-                    "hostname": "{{ lease.name }}"
+                    "hostname": "{{ lease.hostname }}"
                 }{% if not loop.last %},{% endif %}
                 {% endfor %}
             ]

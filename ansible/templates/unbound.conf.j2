@@ -1,6 +1,6 @@
 server:
-    interface: 0.0.0.0
-    interface: ::0
+    interface: 127.0.0.1
+    interface: {{ ansible_host }}
     access-control: 127.0.0.0/8 allow
     access-control: {{ dhcp_subnet }} allow
     port: 53
@@ -10,8 +10,8 @@ server:
 
     local-zone: "{{ domain_local }}." static
     {% for lease in static_leases %}
-    local-data: "{{ lease.name }}.{{ domain_local }}. IN A {{ lease.ip }}"
-    local-data-ptr: "{{ lease.ip }} {{ lease.name }}.{{ domain_local }}"
+    local-data: "{{ lease.hostname }}.{{ domain_local }}. IN A {{ lease.ip }}"
+    local-data-ptr: "{{ lease.ip }} {{ lease.hostname }}.{{ domain_local }}"
     {% endfor %}
 
 forward-zone:
