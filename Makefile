@@ -2,4 +2,5 @@
 
 bootstrap:
 	git config core.hooksPath .githooks
-	pip3 install -r transforms/requirements.txt
+	python3 -m venv .venv
+	.venv/bin/pip install -r transforms/requirements.txt
