@@ -1,30 +1,36 @@
 ---
-environment:
-  domains:
-    local: "rsk.al"
-    public: "raskal.io"
-  localization:
-    timezone: "America/Vancouver"
-  
-  ipam:
-    local_resolver: "127.0.0.1"
-    subnets:
-      - name: "LAN_MAIN"
-        cidr: "10.64.0.0/24"
-        gateway: "10.64.0.1"
-        dhcp_pool:
-          start: "10.64.0.100"
-          stop: "10.64.0.200"
-          dns_servers:
-            - "10.64.0.1"
+paths:
+  etc: "/etc"
+  tasks: "{{ repo_root }}/ansible/tasks"
+  templates: "{{ repo_root }}/ansible/templates"
 
-  global_accounts:
-    - username: "root"
-      role: "Root"
-      directory: "/root"
-      status: "Active"
-    - username: "raskal"
-      role: "Admin"
-      directory: "/home/raskal"
-      linked_email: "labs@raskal.io"
-      status: "Active"
+pipeline:
+  inventory: "{{ repo_root }}/ansible/inventory/transform.py"
+  playbook_pattern: "{{ repo_root }}/ansible/{action}-{host}.yml"
+
+domains:
+  local: "rsk.al"
+  public: "raskal.io"
+
+tz: "America/Vancouver"
+
+subnets:
+  lan:
+    cidr: "10.64.0.0/24"
+    gw: "10.64.0.1"
+    dhcp:
+      start: "10.64.0.100"
+      end: "10.64.0.200"
+      dns:
+        - "10.64.0.1"
+
+users:
+  - name: "root"
+    role: "Root"
+    home: "/root"
+    state: "present"
+  - name: "raskal"
+    role: "Admin"
+    email: "labs@raskal.io"
+    home: "/home/raskal"
+    state: "present"

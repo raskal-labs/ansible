@@ -1,32 +1,28 @@
 ---
-networking_infrastructure:
-  - hostname: "cafe"
-    make_model: "TP-Link Archer AXE75"
-    hardware_version: "v1.0"
-    firmware_version: "1.5.3"
+devices:
+  - host: "cafe"
+    model: "TP-Link Archer AXE75"
     type: "Wireless Access Point"
-    status: "Operational"
     role: "AP / Bridge"
-    ip_address: "10.64.0.3"
-    hardware_mac: "24:2F:D0:D1:2E:30"
-    wan_mac_address: "24:2F:D0:D1:2E:31"
-    compliance: ""
-    wireless_networks:
-      - ssid: "rsk"
-        network_type: "Private"
-        bands_active: ["2.4GHz", "5GHz", "6GHz"]
-        bands_hidden: []
-    features: []
-
-  - hostname: "nx"
-    make_model: "D-Link DGS-1100-08V2"
-    hardware_version: "A1"
-    firmware_version: "1.00.003"
-    type: "Managed Switch"
     status: "Operational"
+    hw_ver: "v1.0"
+    fw_ver: "1.5.3"
+    ip: "10.64.0.3"
+    mac: "24:2F:D0:D1:2E:30"
+    wan_mac: "24:2F:D0:D1:2E:31"
+    wifi:
+      - ssid: "rsk"
+        type: "Private"
+        bands: ["2.4GHz", "5GHz", "6GHz"]
+        hidden: []
+
+  - host: "nx"
+    model: "D-Link DGS-1100-08V2"
+    type: "Managed Switch"
     role: "Core Switch"
-    ip_address: "10.64.0.2"
-    hardware_mac: "88:76:B9:8F:30:E0"
-    compliance: ""
-    wireless_networks: []
-    features: []
+    status: "Operational"
+    hw_ver: "A1"
+    fw_ver: "1.00.003"
+    ip: "10.64.0.2"
+    mac: "88:76:B9:8F:30:E0"
+    wifi: []

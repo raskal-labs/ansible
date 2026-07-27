@@ -1,4 +1,38 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environments
 .venv/
-.aider*
+venv/
+
+# Environment / secrets
 .env
-ansible_core/.venv/
+.env.*
+*.secret
+*.vault
+
+# Aider / AI tooling
+.aider*
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Ansible runtime files
+*.retry
+*.retry.json
+
+# Temporary backups
+*.bak
+
+# Logs
+*.log

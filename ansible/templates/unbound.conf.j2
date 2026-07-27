@@ -8,6 +8,9 @@ server:
     do-udp: yes
     do-tcp: yes
 
+    chroot: {{ unbound_chroot | default('""') }}
+    do-not-query-localhost: {{ unbound_do_not_query_localhost | default('no') }}
+
     local-zone: "{{ domain_local }}." static
     {% for lease in static_leases %}
     local-data: "{{ lease.hostname }}.{{ domain_local }}. IN A {{ lease.ip }}"
