@@ -1,7 +1,7 @@
 [Unit]
 Requires=dnscrypt-proxy.service
-After=dnscrypt-proxy.service
+Wants=network-online.target
+After=network-online.target dnscrypt-proxy.service
 
 [Service]
-ProtectSystem=strict
 ProtectHome=yes

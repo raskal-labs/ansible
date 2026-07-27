@@ -1,6 +1,6 @@
 server:
     interface: 127.0.0.1
-    interface: {{ ansible_host }}
+    interface: {{ iface_lan_ip.split('/')[0] }}
     access-control: 127.0.0.0/8 allow
     access-control: {{ dhcp_subnet }} allow
     port: 53

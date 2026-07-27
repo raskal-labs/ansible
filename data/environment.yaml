@@ -9,13 +9,13 @@ environment:
   ipam:
     subnets:
       - name: "LAN_MAIN"
-        cidr: "10.0.0.0/24"
-        gateway: "10.0.0.1"
+        cidr: "10.64.0.0/24"
+        gateway: "10.64.0.1"
         dhcp_pool:
-          start: "10.0.0.100"
-          stop: "10.0.0.200"
+          start: "10.64.0.100"
+          stop: "10.64.0.200"
           dns_servers:
-            - "10.0.0.1"
+            - "10.64.0.1"
 
   global_accounts:
     - username: "root"

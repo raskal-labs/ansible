@@ -3,7 +3,7 @@ service_profiles:
   edge_router:
     description: "Modular Linux routing and DNS pipeline"
     packages:
-      - "kea-dhcp4"
+      - "kea"
       - "unbound"
       - "dnscrypt-proxy"
       - "nftables"

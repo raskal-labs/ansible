@@ -2,64 +2,30 @@
 - name: Configure Edge Router ultra-64
   hosts: ultra-64
   become: true
+  vars:
+    min_ansible_version: "2.15.0"
   tasks:
-    - name: Stop, disable, and mask NetworkManager, firewalld, and systemd-resolved
-      ansible.builtin.systemd:
-        name: "{{ item }}"
-        state: stopped
-        enabled: false
-        masked: true
-      loop:
-        - NetworkManager
-        - firewalld
-        - systemd-resolved
+    - name: Ensure Ansible version requirement
+      ansible.builtin.assert:
+        that:
+          - ansible_version.full is version(min_ansible_version, '>=')
+        fail_msg: "Ansible {{ min_ansible_version }} or newer is required."
 
-    - name: Remove systemd-resolved resolv.conf symlink
-      ansible.builtin.file:
-        path: /etc/resolv.conf
-        state: absent
+    # --- Step 1: Install required packages while active network is operating ---
+    - name: Install required packages using dnf5
+      ansible.builtin.dnf5:
+        name: "{{ packages }}"
+        state: present
 
-    - name: Create static resolv.conf pointing to localhost
-      ansible.builtin.copy:
-        dest: /etc/resolv.conf
-        content: "nameserver 127.0.0.1\n"
+    # --- Step 2: Render & validate configurations ---
+    - name: Configure sysctl for persistent IPv4 forwarding
+      ansible.builtin.template:
+        src: templates/90-edge-router.conf.j2
+        dest: /etc/sysctl.d/90-edge-router.conf
         owner: root
         group: root
         mode: '0644'
-
-    - name: Install required packages
-      block:
-        - name: Install required packages using dnf5
-          ansible.builtin.dnf5:
-            name: "{{ packages }}"
-            state: present
-      rescue:
-        - name: Fallback to dnf if dnf5 is not available
-          ansible.builtin.dnf:
-            name: "{{ packages }}"
-            state: present
-
-    - name: Set system hostname
-      ansible.builtin.hostname:
-        name: ultra-64
-
-    - name: Set system timezone
-      ansible.builtin.timezone:
-        name: "{{ timezone }}"
-
-    - name: Configure GRUB timeout
-      ansible.builtin.lineinfile:
-        path: /etc/default/grub
-        regexp: '^GRUB_TIMEOUT='
-        line: 'GRUB_TIMEOUT=1'
-      notify: Regenerate GRUB config
-
-    - name: Ensure panic=10 is in GRUB_CMDLINE_LINUX
-      ansible.builtin.replace:
-        path: /etc/default/grub
-        regexp: '^(GRUB_CMDLINE_LINUX="(?![^"]*panic=10)([^"]*))"'
-        replace: 'GRUB_CMDLINE_LINUX="\2 panic=10"'
-      notify: Regenerate GRUB config
+      notify: Apply sysctl configuration
 
     - name: Copy systemd-networkd link configuration
       ansible.builtin.template:
@@ -68,7 +34,7 @@
         owner: root
         group: root
         mode: '0644'
-      notify: Restart systemd-networkd
+      notify: Notify link configuration reboot required
 
     - name: Copy systemd-networkd WAN network configuration
       ansible.builtin.template:
@@ -95,6 +61,7 @@
         owner: root
         group: root
         mode: '0600'
+        validate: 'nft -c -f %s'
       notify: Restart nftables
 
     - name: Copy Kea DHCPv4 configuration
@@ -104,6 +71,7 @@
         owner: root
         group: root
         mode: '0640'
+        validate: 'kea-dhcp4 -t %s'
       notify: Restart kea-dhcp4
 
     - name: Copy Unbound configuration
@@ -113,6 +81,7 @@
         owner: root
         group: root
         mode: '0644'
+        validate: 'unbound-checkconf %s'
       notify: Restart unbound
 
     - name: Copy dnscrypt-proxy configuration
@@ -124,6 +93,7 @@
         mode: '0644'
       notify: Restart dnscrypt-proxy
 
+    # --- Step 3: Install systemd overrides ---
     - name: Create systemd override directories
       ansible.builtin.file:
         path: "/etc/systemd/system/{{ item }}.service.d"
@@ -169,13 +139,60 @@
         - Reload systemd daemon
         - Restart kea-dhcp4
 
-    - name: Ensure systemd-networkd is enabled and started
+    - name: Flush handlers before starting new services
+      ansible.builtin.meta: flush_handlers
+
+    # --- Step 4: Host identity & GRUB configuration ---
+    - name: Set system hostname
+      ansible.builtin.hostname:
+        name: "{{ inventory_hostname }}"
+
+    - name: Set system timezone
+      ansible.builtin.timezone:
+        name: "{{ timezone }}"
+
+    - name: Configure GRUB timeout
+      ansible.builtin.lineinfile:
+        path: /etc/default/grub
+        regexp: '^GRUB_TIMEOUT='
+        line: 'GRUB_TIMEOUT=1'
+      notify: Regenerate GRUB config
+
+    - name: Check current kernel parameters
+      ansible.builtin.command: grubby --info=DEFAULT
+      register: grubby_info
+      changed_when: false
+
+    - name: Ensure panic=10 kernel parameter is set
+      ansible.builtin.command: grubby --update-kernel=ALL --args="panic=10"
+      when: "'panic=10' not in grubby_info.stdout"
+
+    # --- Step 5: Transition network stack & start services ---
+    - name: Gather service facts
+      ansible.builtin.service_facts:
+
+    - name: Stop, disable, and mask legacy network services if present
       ansible.builtin.systemd:
-        name: systemd-networkd
+        name: "{{ item }}"
+        state: stopped
+        enabled: false
+        masked: true
+      loop:
+        - NetworkManager
+        - firewalld
+        - systemd-resolved
+      when: "(item + '.service') in ansible_facts.services"
+
+    - name: Ensure systemd network services are enabled and started
+      ansible.builtin.systemd:
+        name: "{{ item }}"
         state: started
         enabled: true
+      loop:
+        - systemd-networkd
+        - systemd-networkd-wait-online
 
-    - name: Ensure services are enabled and started
+    - name: Ensure core networking and DNS services are enabled and started
       ansible.builtin.systemd:
         name: "{{ item }}"
         state: started
@@ -186,13 +203,53 @@
         - unbound
         - kea-dhcp4
 
+    # --- Step 6: Resolver cutover ---
+    - name: Verify local DNS lookup via Unbound before resolv.conf update
+      ansible.builtin.command: getent ahosts localhost
+      changed_when: false
+
+    - name: Remove systemd-resolved resolv.conf symlink
+      ansible.builtin.file:
+        path: /etc/resolv.conf
+        state: absent
+
+    - name: Create static resolv.conf pointing to localhost
+      ansible.builtin.copy:
+        dest: /etc/resolv.conf
+        content: "nameserver 127.0.0.1\n"
+        owner: root
+        group: root
+        mode: '0644'
+
+    # --- Step 7: Post-deployment health assertions ---
+    - name: Verify sysctl IPv4 forwarding is active
+      ansible.builtin.command: sysctl net.ipv4.ip_forward
+      register: sysctl_ip_forward
+      failed_when: "'net.ipv4.ip_forward = 1' not in sysctl_ip_forward.stdout"
+      changed_when: false
+
+    - name: Verify nftables ruleset is populated
+      ansible.builtin.command: nft list ruleset
+      register: nft_ruleset
+      failed_when: "'table inet global' not in nft_ruleset.stdout"
+      changed_when: false
+
+    - name: Verify default WAN route exists
+      ansible.builtin.command: ip route show default
+      register: wan_default_route
+      failed_when: wan_default_route.stdout == ""
+      changed_when: false
+
   handlers:
+    - name: Apply sysctl configuration
+      ansible.builtin.command: sysctl --system
+
     - name: Reload systemd daemon
       ansible.builtin.systemd:
         daemon_reload: true
 
     - name: Regenerate GRUB config
-      ansible.builtin.command: grub2-mkconfig -o /boot/efi/EFI/fedora/grub.cfg
+      ansible.builtin.command: grub2-mkconfig -o /boot/grub2/grub.cfg
 
     - name: Restart systemd-networkd
       ansible.builtin.systemd:
@@ -218,3 +275,7 @@
       ansible.builtin.systemd:
         name: dnscrypt-proxy
         state: restarted
+
+    - name: Notify link configuration reboot required
+      ansible.builtin.debug:
+        msg: "WAN .link configuration changed. A reboot is required to re-apply udev interface naming rules."

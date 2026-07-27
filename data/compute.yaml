@@ -4,7 +4,7 @@ computing_nodes:
     make_model: "HP t730 Thin Client"
     status: "Operational"
     ip_address: "10.64.0.1"
-    mac_address: "AA:BB:CC:DD:EE:FF"
+    mac_address: "00:E0:4C:68:00:00"
     processor: "AMD RX-427BB Quad-Core APU (2.7 GHz base, up to 3.6 GHz boost)"
     memory:
       capacity: "8GB"
@@ -40,9 +40,11 @@ computing_nodes:
         wan:
           kernel_name: "enp1s0" 
           role: "WAN"
+          permanent_mac_address: "00:E0:4C:68:00:01"
         lan:
           kernel_name: "enp2s0" 
           role: "LAN"
+          permanent_mac_address: "00:E0:4C:68:00:02"
       io:
         - "4 x DisplayPort 1.2"
         - "4 x USB 3.0 (2 Front, 2 Back, 1 Internal)"
@@ -54,7 +56,7 @@ computing_nodes:
     assigned_profile: "edge_router"
     software_stack:
       - "systemd-networkd"
-      - "kea-dhcp4"
+      - "kea"
       - "unbound"
       - "dnscrypt-proxy"
       - "nftables"
