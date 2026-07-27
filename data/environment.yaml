@@ -7,6 +7,7 @@ environment:
     timezone: "America/Vancouver"
   
   ipam:
+    local_resolver: "127.0.0.1"
     subnets:
       - name: "LAN_MAIN"
         cidr: "10.64.0.0/24"

@@ -4,7 +4,6 @@ computing_nodes:
     make_model: "HP t730 Thin Client"
     status: "Operational"
     ip_address: "10.64.0.1"
-    mac_address: "00:E0:4C:68:00:00"
     processor: "AMD RX-427BB Quad-Core APU (2.7 GHz base, up to 3.6 GHz boost)"
     memory:
       capacity: "8GB"
@@ -53,11 +52,8 @@ computing_nodes:
         - "1 x Serial (RS-232)"
         - "1 x Parallel"
         - "2 x PS/2 (Keyboard/Mouse)"
-    operating_system: "Fedora 40 Server Minimal"
+    operating_system: "Fedora 44 Server Minimal"
+    grub_timeout: 1
+    kernel_parameters:
+      - "panic=10"
     assigned_profile: "edge_router"
-    software_stack:
-      - "systemd-networkd"
-      - "kea"
-      - "unbound"
-      - "dnscrypt-proxy"
-      - "nftables"

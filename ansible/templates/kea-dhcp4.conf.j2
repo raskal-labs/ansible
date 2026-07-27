@@ -11,6 +11,7 @@
     "valid-lifetime": 4000,
     "subnet4": [
         {
+            "id": 1,
             "subnet": "{{ dhcp_subnet }}",
             "pools": [ { "pool": "{{ dhcp_range_start }} - {{ dhcp_range_end }}" } ],
             "option-data": [
