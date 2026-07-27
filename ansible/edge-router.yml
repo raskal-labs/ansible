@@ -27,15 +27,6 @@
         mode: '0644'
       notify: Apply sysctl configuration
 
-    - name: Copy systemd-networkd link configuration
-      ansible.builtin.template:
-        src: templates/10-wan.link.j2
-        dest: /etc/systemd/network/10-wan.link
-        owner: root
-        group: root
-        mode: '0644'
-      notify: Notify link configuration reboot required
-
     - name: Copy systemd-networkd WAN network configuration
       ansible.builtin.template:
         src: templates/20-wan.network.j2
@@ -43,7 +34,6 @@
         owner: root
         group: root
         mode: '0644'
-      notify: Restart systemd-networkd
 
     - name: Copy systemd-networkd LAN network configuration
       ansible.builtin.template:
@@ -52,7 +42,6 @@
         owner: root
         group: root
         mode: '0644'
-      notify: Restart systemd-networkd
 
     - name: Copy nftables configuration
       ansible.builtin.template:
@@ -171,14 +160,36 @@
     - name: Gather service facts
       ansible.builtin.service_facts:
 
-    - name: Stop, disable, and mask legacy network services if present
+    - name: Stop, disable, and mask NetworkManager if present
+      ansible.builtin.systemd:
+        name: NetworkManager
+        state: stopped
+        enabled: false
+        masked: true
+      when: "'NetworkManager.service' in ansible_facts.services"
+
+    - name: Copy systemd-networkd WAN link configuration
+      ansible.builtin.template:
+        src: templates/10-wan.link.j2
+        dest: /etc/systemd/network/10-wan.link
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Reload udev rules and apply WAN MAC spoofing
+      ansible.builtin.command:
+        argv:
+          - /bin/sh
+          - -c
+          - udevadm control --reload-rules && udevadm trigger
+
+    - name: Stop, disable, and mask other legacy network services if present
       ansible.builtin.systemd:
         name: "{{ item }}"
         state: stopped
         enabled: false
         masked: true
       loop:
-        - NetworkManager
         - firewalld
         - systemd-resolved
       when: "(item + '.service') in ansible_facts.services"
@@ -251,11 +262,6 @@
     - name: Regenerate GRUB config
       ansible.builtin.command: grub2-mkconfig -o /boot/grub2/grub.cfg
 
-    - name: Restart systemd-networkd
-      ansible.builtin.systemd:
-        name: systemd-networkd
-        state: restarted
-
     - name: Restart nftables
       ansible.builtin.systemd:
         name: nftables
@@ -275,7 +281,3 @@
       ansible.builtin.systemd:
         name: dnscrypt-proxy
         state: restarted
-
-    - name: Notify link configuration reboot required
-      ansible.builtin.debug:
-        msg: "WAN .link configuration changed. A reboot is required to re-apply udev interface naming rules."

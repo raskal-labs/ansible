@@ -22,7 +22,7 @@ computing_nodes:
         capacity: "64GB"
         filesystem: "ext4"
         utilization: "58.7G Usable"
-        configuration: 
+        configuration:
           - "mount: /boot/efi (976M)"
           - "mount: / (54.7G)"
           - "mount: [SWAP] (3G)"
@@ -33,16 +33,17 @@ computing_nodes:
         status: "In Use"
         device: "Intel 82571EB/82571GB Dual-Port Gigabit Ethernet Controller"
     connectivity:
-      ethernet: 
+      ethernet:
         - "1 x Gigabit (Realtek Onboard)"
         - "2 x Gigabit (Intel PCIe)"
       os_interfaces:
         wan:
-          kernel_name: "enp1s0" 
+          kernel_name: "enp1s0"
           role: "WAN"
-          permanent_mac_address: "00:E0:4C:68:00:01"
+          hardware_mac: "7c:d3:0a:2c:08:d3"
+          functional_mac: "24:2F:D0:D1:2E:31"
         lan:
-          kernel_name: "enp2s0" 
+          kernel_name: "enp2s0"
           role: "LAN"
           permanent_mac_address: "00:E0:4C:68:00:02"
       io:

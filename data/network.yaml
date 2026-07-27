@@ -1,6 +1,6 @@
 ---
 networking_infrastructure:
-  - hostname: "revolution"
+  - hostname: "cafe"
     make_model: "TP-Link Archer AXE75"
     hardware_version: "v1.0"
     firmware_version: "1.5.3"
@@ -8,7 +8,7 @@ networking_infrastructure:
     status: "Operational"
     role: "AP / Bridge"
     ip_address: "10.64.0.3"
-    mac_address: "24:2F:D0:D1:2E:30"
+    hardware_mac: "24:2F:D0:D1:2E:30"
     wan_mac_address: "24:2F:D0:D1:2E:31"
     compliance: ""
     wireless_networks:
@@ -19,14 +19,14 @@ networking_infrastructure:
     features: []
 
   - hostname: "nx"
-    make_model: "D-Link Managed Switch"
-    hardware_version: "DGS-1100-08V2"
-    firmware_version: ""
+    make_model: "D-Link DGS-1100-08V2"
+    hardware_version: "A1"
+    firmware_version: "1.00.003"
     type: "Managed Switch"
     status: "Operational"
     role: "Core Switch"
     ip_address: "10.64.0.2"
-    mac_address: "00:11:22:33:44:66"
+    hardware_mac: "88:76:B9:8F:30:E0"
     compliance: ""
     wireless_networks: []
     features: []

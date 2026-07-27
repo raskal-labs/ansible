@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
+import ipaddress
+import json
 import os
 import sys
-import json
-import ipaddress
+
 import yaml
+
 
 def load_yaml(path):
     if not os.path.exists(path):
@@ -13,6 +15,7 @@ def load_yaml(path):
         if data is None:
             raise ValueError(f"File is empty: {path}")
         return data
+
 
 def main():
     script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -60,7 +63,10 @@ def main():
     if dhcp_end not in net:
         raise ValueError(f"DHCP pool stop {dhcp_end_str} is not in subnet {cidr}")
     if dhcp_start > dhcp_end:
-        raise ValueError(f"DHCP pool start {dhcp_start_str} is greater than pool stop {dhcp_end_str}")
+        raise ValueError(
+            f"DHCP pool start {dhcp_start_str} is greater than "
+            f"pool stop {dhcp_end_str}"
+        )
 
     iface_lan_ip = f"{gateway_ip_str}/{net.prefixlen}"
 
@@ -86,45 +92,83 @@ def main():
 
     iface_wan = wan_iface.get('kernel_name')
     iface_lan = lan_iface.get('kernel_name')
-    iface_wan_perm_mac = wan_iface.get('permanent_mac_address')
+    iface_wan_hardware_mac = wan_iface.get('hardware_mac')
+    iface_wan_functional_mac = wan_iface.get('functional_mac')
 
     if not iface_wan or not iface_lan:
         raise ValueError("WAN or LAN interface kernel_name missing in compute.yaml")
 
-    if not iface_wan_perm_mac or "AA:BB:CC" in iface_wan_perm_mac.upper():
-        raise ValueError("Missing or placeholder permanent MAC address for WAN interface")
+    if (
+        not iface_wan_hardware_mac
+        or "AA:BB:CC" in iface_wan_hardware_mac.upper()
+    ):
+        raise ValueError(
+            "Missing or placeholder hardware MAC address for WAN interface"
+        )
+
+    if (
+        not iface_wan_functional_mac
+        or "AA:BB:CC" in iface_wan_functional_mac.upper()
+    ):
+        raise ValueError(
+            "Missing or placeholder functional MAC address for WAN interface"
+        )
 
     # Network devices and static leases validation
     net_devices = network_data.get('networking_infrastructure', [])
-    revolution_device = next((d for d in net_devices if d.get('hostname') == 'revolution'), None)
-    if not revolution_device:
-        raise ValueError("Device 'revolution' not found in network.yaml")
+    cafe_device = next(
+        (d for d in net_devices if d.get('hostname') == 'cafe'),
+        None
+    )
+    if not cafe_device:
+        raise ValueError("Device 'cafe' not found in network.yaml")
 
-    iface_wan_spoof_mac = revolution_device.get('wan_mac_address')
-    if not iface_wan_spoof_mac or "AA:BB:CC" in iface_wan_spoof_mac.upper():
-        raise ValueError("Missing or placeholder WAN spoof MAC address on revolution device")
+    cafe_wan_mac = cafe_device.get('wan_mac_address')
+    if not cafe_wan_mac or "AA:BB:CC" in cafe_wan_mac.upper():
+        raise ValueError(
+            "Missing or placeholder WAN MAC address on cafe device"
+        )
+
+    if cafe_wan_mac.upper() != iface_wan_functional_mac.upper():
+        raise ValueError(
+            "WAN functional_mac for ultra-64 does not match "
+            "cafe.wan_mac_address"
+        )
 
     seen_ips = {gateway_ip_str}
-    seen_macs = {iface_wan_perm_mac.upper(), iface_wan_spoof_mac.upper()}
+    seen_macs = {
+        iface_wan_hardware_mac.upper(),
+        iface_wan_functional_mac.upper()
+    }
     seen_hostnames = {'ultra-64'}
 
     static_leases = []
     for dev in net_devices:
         ip = dev.get('ip_address')
-        mac = dev.get('mac_address')
+        mac = dev.get('hardware_mac')
         hostname = dev.get('hostname')
         if ip and mac and hostname:
             ip_obj = ipaddress.ip_address(ip)
             if ip_obj not in net:
-                raise ValueError(f"Static lease IP {ip} for host {hostname} is outside subnet {cidr}")
+                raise ValueError(
+                    f"Static lease IP {ip} for host {hostname} "
+                    f"is outside subnet {cidr}"
+                )
             if dhcp_start <= ip_obj <= dhcp_end:
-                raise ValueError(f"Static lease IP {ip} for host {hostname} overlaps dynamic pool range")
+                raise ValueError(
+                    f"Static lease IP {ip} for host {hostname} "
+                    "overlaps dynamic pool range"
+                )
             if ip in seen_ips:
                 raise ValueError(f"Duplicate IP address in static leases: {ip}")
             if mac.upper() in seen_macs:
-                raise ValueError(f"Duplicate MAC address in static leases: {mac}")
+                raise ValueError(
+                    f"Duplicate MAC address in static leases: {mac}"
+                )
             if hostname in seen_hostnames:
-                raise ValueError(f"Duplicate hostname in static leases: {hostname}")
+                raise ValueError(
+                    f"Duplicate hostname in static leases: {hostname}"
+                )
 
             seen_ips.add(ip)
             seen_macs.add(mac.upper())
@@ -140,8 +184,8 @@ def main():
         "ansible_host": ansible_host,
         "timezone": timezone,
         "domain_local": domain_local,
-        "iface_wan_permanent_mac": iface_wan_perm_mac,
-        "iface_wan_spoof_mac": iface_wan_spoof_mac,
+        "iface_wan_permanent_mac": iface_wan_hardware_mac,
+        "iface_wan_spoof_mac": iface_wan_functional_mac,
         "iface_wan": iface_wan,
         "iface_lan": iface_lan,
         "iface_lan_ip": iface_lan_ip,
@@ -177,6 +221,7 @@ def main():
         print(json.dumps(inventory, indent=2))
     else:
         print(json.dumps(inventory, indent=2))
+
 
 if __name__ == '__main__':
     main()
