@@ -47,6 +47,20 @@
       ansible.builtin.timezone:
         name: "{{ timezone }}"
 
+    - name: Configure GRUB timeout
+      ansible.builtin.lineinfile:
+        path: /etc/default/grub
+        regexp: '^GRUB_TIMEOUT='
+        line: 'GRUB_TIMEOUT=1'
+      notify: Regenerate GRUB config
+
+    - name: Ensure panic=10 is in GRUB_CMDLINE_LINUX
+      ansible.builtin.replace:
+        path: /etc/default/grub
+        regexp: '^(GRUB_CMDLINE_LINUX="(?![^"]*panic=10)([^"]*))"'
+        replace: 'GRUB_CMDLINE_LINUX="\2 panic=10"'
+      notify: Regenerate GRUB config
+
     - name: Copy systemd-networkd link configuration
       ansible.builtin.template:
         src: templates/10-wan.link.j2
@@ -176,6 +190,9 @@
     - name: Reload systemd daemon
       ansible.builtin.systemd:
         daemon_reload: true
+
+    - name: Regenerate GRUB config
+      ansible.builtin.command: grub2-mkconfig -o /boot/efi/EFI/fedora/grub.cfg
 
     - name: Restart systemd-networkd
       ansible.builtin.systemd:
