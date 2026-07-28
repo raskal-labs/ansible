@@ -1,0 +1,7 @@
+---
+id: firewall
+packages:
+  - nftables
+templates:
+  - source: nftables.conf.j2
+    destination: /etc/nftables.conf

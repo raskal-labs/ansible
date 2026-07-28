@@ -1,0 +1,7 @@
+---
+id: dhcp
+packages:
+  - kea
+templates:
+  - source: kea-dhcp4.conf.j2
+    destination: /etc/kea/kea-dhcp4.conf

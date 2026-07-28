@@ -1,0 +1,4 @@
+[Unit]
+Requires=unbound.service
+Wants=network-online.target
+After=network-online.target unbound.service

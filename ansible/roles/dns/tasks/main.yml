@@ -1,0 +1,66 @@
+---
+- name: Deploy core DNS configurations
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: root
+    group: root
+    mode: '0644'
+  loop:
+    - { src: 'unbound.conf.j2', dest: '/etc/unbound/unbound.conf', svc: 'unbound' }
+    - { src: 'dnscrypt-proxy.toml.j2', dest: '/etc/dnscrypt-proxy/dnscrypt-proxy.toml', svc: 'dnscrypt-proxy' }
+  notify: "Restart {{ item.svc }}"
+
+- name: Create systemd override directories
+  ansible.builtin.file:
+    path: "/etc/systemd/system/{{ item }}.service.d"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  loop:
+    - unbound
+    - dnscrypt-proxy
+
+- name: Deploy systemd overrides
+  ansible.builtin.template:
+    src: "{{ item }}-override.conf.j2"
+    dest: "/etc/systemd/system/{{ item }}.service.d/override.conf"
+    owner: root
+    group: root
+    mode: '0644'
+  loop:
+    - unbound
+    - dnscrypt-proxy
+  notify:
+    - Reload systemd daemon
+    - "Restart {{ item }}"
+
+- name: Flush handlers before starting services
+  ansible.builtin.meta: flush_handlers
+
+- name: Ensure DNS services are enabled and started
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    state: started
+    enabled: true
+  loop:
+    - dnscrypt-proxy
+    - unbound
+
+- name: Verify local DNS lookup before resolv.conf update
+  ansible.builtin.command: getent ahosts localhost
+  changed_when: false
+
+- name: Remove systemd-resolved resolv.conf symlink
+  ansible.builtin.file:
+    path: "/etc/resolv.conf"
+    state: absent
+
+- name: Create static resolv.conf pointing to local resolver
+  ansible.builtin.copy:
+    dest: "/etc/resolv.conf"
+    content: "nameserver 127.0.0.1\n"
+    owner: root
+    group: root
+    mode: '0644'

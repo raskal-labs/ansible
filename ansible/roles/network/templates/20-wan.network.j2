@@ -1,0 +1,9 @@
+[Match]
+Name={{ hardware.interfaces.wan.name }}
+
+[Network]
+DHCP=ipv4
+IPv6AcceptRA=no
+
+[DHCPv4]
+ClientIdentifier={{ wan_dhcp_client_identifier | default('mac') }}
