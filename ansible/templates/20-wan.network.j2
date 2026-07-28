@@ -1,9 +1,0 @@
-[Match]
-Name={{ iface_wan }}
-
-[Network]
-DHCP=ipv4
-IPv6AcceptRA=no
-
-[DHCPv4]
-ClientIdentifier={{ wan_dhcp_client_identifier | default('mac') }}
