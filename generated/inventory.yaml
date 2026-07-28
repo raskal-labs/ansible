@@ -1,6 +1,6 @@
 all:
   hosts:
-    ultra-64:
+    ultra64:
       repo: '{{ playbook_dir | dirname }}'
       paths:
         etc: /etc
@@ -32,44 +32,62 @@ all:
         email: labs@raskal.io
         home: /home/raskal
         state: present
-      profiles:
-        router:
-          desc: Modular Linux routing and DNS pipeline
-          pkgs:
-          - kea
+      packages:
+      - bind-utils
+      - conntrack-tools
+      - curl
+      - dnscrypt-proxy
+      - ethtool
+      - git
+      - htop
+      - iftop
+      - ipcalc
+      - iperf3
+      - kea
+      - mtr
+      - nano
+      - net-tools
+      - nftables
+      - nload
+      - nmap
+      - socat
+      - tcpdump
+      - tmux
+      - traceroute
+      - tree
+      - unbound
+      - wget
+      packages_absent:
+      - firewalld
+      - netbird
+      - systemd-resolved
+      configured_services:
+        dns:
+          id: dns
+          packages:
           - unbound
           - dnscrypt-proxy
+          templates:
+          - source: unbound.conf.j2
+            destination: /etc/unbound/unbound.conf
+          - source: dnscrypt-proxy.toml.j2
+            destination: /etc/dnscrypt-proxy/dnscrypt-proxy.toml
+        dhcp:
+          id: dhcp
+          packages:
+          - kea
+          templates:
+          - source: kea-dhcp4.conf.j2
+            destination: /etc/kea/kea-dhcp4.conf
+        firewall:
+          id: firewall
+          packages:
           - nftables
-          - systemd-networkd
-          - nano
-          - make
-          files:
-          - svc: kea-dhcp4
-            src: kea-dhcp4.conf.j2
-            dest: /etc/kea/kea-dhcp4.conf
-            mode: '0644'
-            test: kea-dhcp4 -t %s
-            override: true
-          - svc: unbound
-            src: unbound.conf.j2
-            dest: /etc/unbound/unbound.conf
-            mode: '0644'
-            test: unbound-checkconf %s
-            override: true
-          - svc: dnscrypt-proxy
-            src: dnscrypt-proxy.toml.j2
-            dest: /etc/dnscrypt-proxy/dnscrypt-proxy.toml
-            mode: '0644'
-            test: dnscrypt-proxy -check -config %s
-            override: true
-          - svc: nftables
-            src: nftables.conf.j2
-            dest: /etc/nftables.conf
-            mode: '0600'
-            test: nft -c -f %s
-            override: false
+          templates:
+          - source: nftables.conf.j2
+            destination: /etc/nftables.conf
       identity:
-        hostname: ultra-64
+        hostname: ultra64
       profile: router
       status: Operational
       os: Fedora 44 Server Minimal
@@ -127,7 +145,7 @@ all:
           range_end: 10.64.0.200
           dns_server: 10.64.0.1
           static_leases:
-          - hostname: cafe
+          - hostname: nitro
             ip: 10.64.0.3
             mac: 24:2F:D0:D1:2E:30
           - hostname: nx

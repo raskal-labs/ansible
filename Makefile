@@ -5,7 +5,7 @@
 .PHONY: all check-tools validate compile inventory syntax dry-run diff drift-check deploy status clean lint doctor graph docs
 
 # --- Dynamic Execution Arguments ---
-# Use: make deploy TARGET=ultra-64 CONN=local
+# Use: make deploy TARGET=ultra64 CONN=local
 TARGET       ?= all
 CONN         ?= smart
 
@@ -37,26 +37,30 @@ check-tools:
 	@command -v ansible-playbook >/dev/null || \
 		(echo "Error: Missing ansible-playbook"; exit 1)
 
-validate: check-tools
-	@echo "==> [VALIDATE] Validating source-of-truth data..."
-	@if [ -f "$(VALIDATOR)" ]; then \
-		python3 $(VALIDATOR) $(DATA_DIR); \
-	else \
-		echo "    (Placeholder) No validation tool found at $(VALIDATOR). Skipping."; \
-	fi
+validate:
+	@python3 tools/validate_yaml.py
 
 compile: validate
-	@echo "==> [COMPILE] Crossing source-to-artifact boundary..."
-	@mkdir -p $(GEN_DIR)
-	@if [ -f "$(COMPILER)" ]; then \
-		python3 $(COMPILER); \
-	elif [ -f "$(LEGACY_TRANS)" ]; then \
-		echo "    (Fallback) Using legacy transform layer..."; \
-		python3 $(LEGACY_TRANS); \
-	else \
-		echo "    Error: Neither $(COMPILER) nor $(LEGACY_TRANS) found."; exit 1; \
-	fi
-	@echo "    Abstraction boundary prepared."
+ifndef SKIP_COMPILE
+	@python3 tools/compile.py
+else
+	@echo "==> [SKIP] Skipping compilation step (using existing generated/inventory.yaml)"
+endif
+
+dry-run: compile
+	@ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i generated/inventory.yaml ansible/playbooks/site.yml --check
+
+apply: compile
+	@ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i generated/inventory.yaml ansible/playbooks/site.yml
+
+snapshot:
+	@cp generated/inventory.yaml generated/inventory.bak
+	@echo "==> Saved snapshot to generated/inventory.bak"
+
+restore-apply:
+	@cp generated/inventory.bak generated/inventory.yaml
+	@echo "==> Restored generated/inventory.bak"
+	@ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i generated/inventory.yaml ansible/playbooks/site.yml
 
 inventory: compile
 	@echo "==> [INVENTORY] Generated inventory:"
@@ -66,10 +70,6 @@ inventory: compile
 syntax: compile check-tools
 	@echo "==> [SYNTAX] Running Ansible syntax validation..."
 	@ansible-playbook -i $(INVENTORY) $(PLAYBOOK) --syntax-check
-
-dry-run: syntax
-	@echo "==> [DRY-RUN] Executing simulated deployment against $(TARGET)..."
-	@ansible-playbook -i $(INVENTORY) $(PLAYBOOK) --check --limit $(TARGET) -c $(CONN)
 
 diff: syntax
 	@echo "==> [DIFF] Executing simulated deployment with visual diffs against $(TARGET)..."

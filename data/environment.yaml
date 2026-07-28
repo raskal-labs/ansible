@@ -36,3 +36,19 @@ users:
     email: "labs@raskal.io"
     home: "/home/raskal"
     state: "present"
+
+packages:
+  - bind-utils
+  - curl
+  - git
+  - htop
+  - ipcalc
+  - mtr
+  - nano
+  - tmux
+  - traceroute
+  - tree
+  - wget
+
+packages_absent: []
+

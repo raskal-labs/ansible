@@ -1,5 +1,5 @@
 identity:
-  hostname: ultra-64
+  hostname: ultra64
 profile: router
 status: Operational
 os: Fedora 44 Server Minimal
@@ -57,9 +57,25 @@ host_services:
     range_end: 10.64.0.200
     dns_server: 10.64.0.1
     static_leases:
-    - hostname: cafe
+    - hostname: nitro
       ip: 10.64.0.3
       mac: 24:2F:D0:D1:2E:30
     - hostname: nx
       ip: 10.64.0.2
       mac: 88:76:B9:8F:30:E0
+
+packages:
+  - conntrack-tools
+  - ethtool
+  - iftop
+  - iperf3
+  - net-tools
+  - nload
+  - nmap
+  - socat
+  - tcpdump
+
+packages_absent:
+  - firewalld
+  - netbird
+  - systemd-resolved

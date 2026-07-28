@@ -1,6 +1,6 @@
 ---
 devices:
-  - host: "cafe"
+  - host: "nitro"
     model: "TP-Link Archer AXE75"
     type: "Wireless Access Point"
     role: "AP / Bridge"

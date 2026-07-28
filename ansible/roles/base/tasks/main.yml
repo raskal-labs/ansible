@@ -31,8 +31,19 @@
   loop: "{{ opts.kernel_args }}"
   when: "item not in grubby_info.stdout"
 
-- name: Install required packages
+- name: Enforce absent packages (State Purging)
   ansible.builtin.dnf5:
-    name: "{{ packages | default([]) }}"
+    name: "{{ packages_absent }}"
+    state: absent
+  when: packages_absent is defined and packages_absent | length > 0
+
+- name: Install required packages (Hardened with retries)
+  ansible.builtin.dnf5:
+    name: "{{ packages }}"
     state: present
+    update_cache: yes
+  register: dnf_result
+  until: dnf_result is success
+  retries: 3
+  delay: 5
   when: packages is defined and packages | length > 0
