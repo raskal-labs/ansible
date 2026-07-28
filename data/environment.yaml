@@ -1,12 +1,14 @@
 ---
+repo: "{{ playbook_dir | dirname }}"
+
 paths:
   etc: "/etc"
-  tasks: "{{ repo_root }}/ansible/tasks"
-  templates: "{{ repo_root }}/ansible/templates"
+  tasks: "{{ repo }}/ansible/tasks"
+  templates: "{{ repo }}/ansible/templates"
 
 pipeline:
-  inventory: "{{ repo_root }}/ansible/inventory/transform.py"
-  playbook_pattern: "{{ repo_root }}/ansible/{action}-{host}.yml"
+  inventory: "{{ repo }}/ansible/inventory/transform.py"
+  playbook_pattern: "{{ repo }}/ansible/{action}-{host}.yml"
 
 domains:
   local: "rsk.al"

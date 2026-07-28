@@ -13,15 +13,15 @@ help:
 
 run:
 	@echo "==> Executing $(ACTION) on $(HOST)..."
-	ansible-playbook -i $(CURDIR)/ansible/inventory/transform.py -e "repo_root=$(CURDIR)" -c local $(CURDIR)/ansible/$(ACTION)-$(HOST).yml
+	ansible-playbook -i $(CURDIR)/ansible/inventory/transform.py -e "repo=$(CURDIR)" -c local $(CURDIR)/ansible/$(ACTION)-$(HOST).yml
 
 dry-run:
 	@echo "==> Dry-run for $(ACTION) on $(HOST)..."
-	ansible-playbook -i $(CURDIR)/ansible/inventory/transform.py -e "repo_root=$(CURDIR)" -c local $(CURDIR)/ansible/$(ACTION)-$(HOST).yml --check --diff
+	ansible-playbook -i $(CURDIR)/ansible/inventory/transform.py -e "repo=$(CURDIR)" -c local $(CURDIR)/ansible/$(ACTION)-$(HOST).yml --check --diff
 
 syntax:
 	@echo "==> Checking syntax for $(ACTION)-$(HOST).yml..."
-	ansible-playbook -i $(CURDIR)/ansible/inventory/transform.py -e "repo_root=$(CURDIR)" $(CURDIR)/ansible/$(ACTION)-$(HOST).yml --syntax-check
+	ansible-playbook -i $(CURDIR)/ansible/inventory/transform.py -e "repo=$(CURDIR)" $(CURDIR)/ansible/$(ACTION)-$(HOST).yml --syntax-check
 
 inventory:
 	@echo "==> Transforming YAML data to Ansible JSON inventory..."

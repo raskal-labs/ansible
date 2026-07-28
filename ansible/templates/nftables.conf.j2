@@ -1,26 +1,42 @@
 flush ruleset
 
-table inet global {
-    chain inbound {
-        type filter hook input priority 0; policy drop;
-        ct state established,related accept
+table inet filter {
+    chain input {
+        type filter hook input priority filter; policy drop;
+        
+        # Allow internal loopback
         iifname "lo" accept
-        iifname "{{ iface_lan }}" accept
-        iifname "{{ iface_wan }}" udp dport 68 udp sport 67 accept
-        meta l4proto icmp accept
-        meta l4proto ipv6-icmp accept
+        
+        # Allow returning internet traffic
+        ct state established,related accept
+        
+        # Allow SSH from LAN
+        iifname "enp1s0f1" tcp dport 22 accept
+        
+        # Allow DNS and DHCP from LAN
+        iifname "enp1s0f1" udp dport { 53, 67 } accept
+        iifname "enp1s0f1" tcp dport 53 accept
+        
+        # Allow ICMP (Ping)
+        ip protocol icmp accept
     }
 
     chain forward {
-        type filter hook forward priority 0; policy drop;
+        type filter hook forward priority filter; policy drop;
+        
+        # Allow returning internet traffic
         ct state established,related accept
-        ip saddr {{ dhcp_subnet }} iifname "{{ iface_lan }}" oifname "{{ iface_wan }}" accept
+        
+        # Allow LAN (enp1s0f1) to route out to WAN (enp1s0f0)
+        iifname "enp1s0f1" oifname "enp1s0f0" accept
     }
 }
 
 table ip nat {
     chain postrouting {
-        type nat hook postrouting priority 100; policy accept;
-        oifname "{{ iface_wan }}" masquerade
+        type nat hook postrouting priority srcnat; policy accept;
+        
+        # Masquerade (NAT) all traffic leaving the WAN port
+        oifname "enp1s0f0" masquerade
     }
 }

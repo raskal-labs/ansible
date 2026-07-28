@@ -41,7 +41,7 @@ if command -v ansible-playbook >/dev/null 2>&1; then
     ansible-playbook \
         --syntax-check \
         -i "${REPO_ROOT}/ansible/inventory/transform.py" \
-        -e "repo_root=${REPO_ROOT}" \
+        -e "repo=${REPO_ROOT}" \
         "${REPO_ROOT}/ansible/provision-ultra-64.yml"
 else
     echo "ansible-playbook not found, skipping."

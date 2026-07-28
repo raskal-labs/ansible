@@ -1,0 +1,12 @@
+---
+- name: Deploy nftables firewall rules
+  template:
+    src: "{{ paths.templates }}/nftables.conf.j2"
+    dest: /etc/sysconfig/nftables.conf
+    mode: '0600'
+
+- name: Ensure nftables service is enabled and started
+  ansible.builtin.systemd:
+    name: nftables
+    enabled: true
+    state: started

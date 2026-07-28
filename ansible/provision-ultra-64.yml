@@ -4,9 +4,9 @@
   become: true
   
   vars_files:
-    - "{{ repo_root }}/data/environment.yaml"
-    - "{{ repo_root }}/data/compute.yaml"
-    - "{{ repo_root }}/data/services.yaml"
+    - "{{ playbook_dir }}/../data/environment.yaml"
+    - "{{ playbook_dir }}/../data/compute.yaml"
+    - "{{ playbook_dir }}/../data/services.yaml"
     
   vars:
     min_ansible_version: "2.15.0"
@@ -28,6 +28,9 @@
           
         - name: Phase 2 - Network Stack Transition
           ansible.builtin.import_tasks: "{{ paths.tasks }}/network.yml"
+
+        - name: Phase 2.5 - Firewall & NAT Policies
+          ansible.builtin.import_tasks: "{{ paths.tasks }}/firewall.yml"
           
         - name: Phase 3 - Core Services Deployment
           ansible.builtin.import_tasks: "{{ paths.tasks }}/services.yml"
