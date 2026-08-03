@@ -1,0 +1,43 @@
+---
+# SSH Role - Deploy authorized keys and private keys
+
+- name: Deploy authorized keys for system accounts
+  ansible.posix.authorized_key:
+    user: "{{ item.username }}"
+    key: "{{ client.key }}"
+    comment: "{{ client.name }}"
+    state: present
+  loop: "{{ global_identities }}"
+  loop_control:
+    loop_var: item
+  when: item.authorized_clients is defined
+  with_subelements:
+    - "{{ global_identities }}"
+    - authorized_clients
+  loop_control:
+    loop_var: client
+  tags:
+    - ssh
+    - authorized_keys
+
+- name: Deploy ultra64 private key to root
+  copy:
+    content: "{{ vault_ultra64_private_key }}"
+    dest: /root/.ssh/id_ed25519
+    mode: '0600'
+    owner: root
+    group: root
+  no_log: true
+  tags:
+    - ssh
+    - private_key
+
+- name: Ensure .ssh directory exists for root
+  file:
+    path: /root/.ssh
+    state: directory
+    mode: '0700'
+    owner: root
+    group: root
+  tags:
+    - ssh
