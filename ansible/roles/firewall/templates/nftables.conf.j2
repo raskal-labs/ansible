@@ -1,0 +1,42 @@
+flush ruleset
+
+table inet filter {
+    chain input {
+        type filter hook input priority filter; policy drop;
+        
+        # Allow internal loopback
+        iifname "lo" accept
+        
+        # Allow returning internet traffic
+        ct state established,related accept
+        
+        # Allow SSH from LAN
+        iifname "{{ hardware.interfaces.lan.name }}" tcp dport 22 accept
+        
+        # Allow DNS and DHCP from LAN
+        iifname "{{ hardware.interfaces.lan.name }}" udp dport { 53, 67 } accept
+        iifname "{{ hardware.interfaces.lan.name }}" tcp dport 53 accept
+        
+        # Allow ICMP (Ping)
+        ip protocol icmp accept
+    }
+
+    chain forward {
+        type filter hook forward priority filter; policy drop;
+        
+        # Allow returning internet traffic
+        ct state established,related accept
+        
+        # Allow LAN ({{ hardware.interfaces.lan.name }}) to route out to WAN ({{ hardware.interfaces.wan.name }})
+        iifname "{{ hardware.interfaces.lan.name }}" oifname "{{ hardware.interfaces.wan.name }}" accept
+    }
+}
+
+table ip nat {
+    chain postrouting {
+        type nat hook postrouting priority srcnat; policy accept;
+        
+        # Masquerade (NAT) all traffic leaving the WAN port
+        oifname "{{ hardware.interfaces.wan.name }}" masquerade
+    }
+}

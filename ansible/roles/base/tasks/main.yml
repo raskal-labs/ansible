@@ -1,0 +1,49 @@
+---
+- name: Set system hostname
+  ansible.builtin.hostname:
+    name: "{{ inventory_hostname }}"
+
+- name: Set system timezone
+  ansible.builtin.timezone:
+    name: "{{ tz }}"
+
+- name: Ensure global accounts exist
+  ansible.builtin.user:
+    name: "{{ item.name }}"
+    home: "{{ item.home }}"
+    state: "{{ item.state }}"
+  loop: "{{ users }}"
+
+- name: Configure GRUB timeout
+  ansible.builtin.lineinfile:
+    path: "{{ paths.etc }}/default/grub"
+    regexp: '^GRUB_TIMEOUT='
+    line: "GRUB_TIMEOUT={{ opts.grub_timeout }}"
+  notify: Regenerate GRUB config
+
+- name: Check current kernel parameters
+  ansible.builtin.command: grubby --info=DEFAULT
+  register: grubby_info
+  changed_when: false
+
+- name: Ensure required kernel parameters are set
+  ansible.builtin.command: "grubby --update-kernel=ALL --args=\"{{ item }}\""
+  loop: "{{ opts.kernel_args }}"
+  when: "item not in grubby_info.stdout"
+
+- name: Enforce absent packages (State Purging)
+  ansible.builtin.dnf5:
+    name: "{{ packages_absent }}"
+    state: absent
+  when: packages_absent is defined and packages_absent | length > 0
+
+- name: Install required packages (Hardened with retries)
+  ansible.builtin.dnf5:
+    name: "{{ packages }}"
+    state: present
+    update_cache: yes
+  register: dnf_result
+  until: dnf_result is success
+  retries: 3
+  delay: 5
+  when: packages is defined and packages | length > 0

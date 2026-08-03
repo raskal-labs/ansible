@@ -1,0 +1,43 @@
+{
+"Dhcp4": {
+    "interfaces-config": {
+        "interfaces": [ "{{ hardware.interfaces.lan.name }}" ]
+    },
+    "lease-database": {
+        "type": "memfile",
+        "persist": true,
+        "name": "/var/lib/kea/kea-leases4.csv"
+    },
+    "valid-lifetime": 4000,
+    "subnet4": [
+        {
+            "id": 1,
+            "subnet": "{{ host_services.dhcp.subnet }}",
+            "pools": [ { "pool": "{{ host_services.dhcp.range_start }} - {{ host_services.dhcp.range_end }}" } ],
+            "option-data": [
+                {
+                    "name": "routers",
+                    "data": "{{ network.lan.ip.split('/')[0] }}"
+                },
+                {
+                    "name": "domain-name-servers",
+                    "data": "{{ host_services.dhcp.dns_server }}"
+                },
+                {
+                    "name": "domain-name",
+                    "data": "{{ network.lan.domain }}"
+                }
+            ],
+            "reservations": [
+                {% for lease in host_services.dhcp.static_leases %}
+                {
+                    "hw-address": "{{ lease.mac }}",
+                    "ip-address": "{{ lease.ip }}",
+                    "hostname": "{{ lease.hostname }}"
+                }{% if not loop.last %},{% endif %}
+                {% endfor %}
+            ]
+        }
+    ]
+}
+}

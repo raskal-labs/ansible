@@ -1,0 +1,22 @@
+server:
+    interface: 127.0.0.1
+    interface: {{ network.lan.ip.split('/')[0] }}
+    access-control: 127.0.0.0/8 allow
+    access-control: {{ host_services.dhcp.subnet }} allow
+    port: 53
+    do-ip4: yes
+    do-udp: yes
+    do-tcp: yes
+
+    chroot: {{ unbound_chroot | default('""') }}
+    do-not-query-localhost: {{ unbound_do_not_query_localhost | default('no') }}
+
+    local-zone: "{{ network.lan.domain }}." static
+    {% for lease in host_services.dhcp.static_leases %}
+    local-data: "{{ lease.hostname }}.{{ network.lan.domain }}. IN A {{ lease.ip }}"
+    local-data-ptr: "{{ lease.ip }} {{ lease.hostname }}.{{ network.lan.domain }}"
+    {% endfor %}
+
+forward-zone:
+    name: "."
+    forward-addr: 127.0.0.1@54

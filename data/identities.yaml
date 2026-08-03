@@ -1,0 +1,11 @@
+system_accounts:
+  - username: root
+    shell: /bin/bash
+    state: present
+    authorized_clients:
+      - name: gameboy
+        key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGCBAHN8wfMIQB53WMvtuwwIef5+6xx6dnWz3ojK3ZHJ gameboy"
+      - name: minty@freshbox
+        key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMZTtS3fiWvIMQzpZk//k6LJ+FKVaQA7NpHc7bBAj0pC minty"
+      - name: root@gamecube
+        key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIP7NWiRVdLEnGuc4hOMUVbDPT0oM2VM3oSA335EF4WbS gamecube"

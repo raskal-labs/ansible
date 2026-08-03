@@ -1,0 +1,153 @@
+all:
+  hosts:
+    ultra64:
+      repo: '{{ playbook_dir | dirname }}'
+      paths:
+        etc: /etc
+        tasks: '{{ repo }}/ansible/tasks'
+        templates: '{{ repo }}/ansible/templates'
+      pipeline:
+        inventory: '{{ repo }}/ansible/inventory/transform.py'
+        playbook_pattern: '{{ repo }}/ansible/{action}-{host}.yml'
+      domains:
+        local: rsk.al
+        public: raskal.io
+      tz: America/Vancouver
+      subnets:
+        lan:
+          cidr: 10.64.0.0/24
+          gw: 10.64.0.1
+          dhcp:
+            start: 10.64.0.100
+            end: 10.64.0.200
+            dns:
+            - 10.64.0.1
+      users:
+      - name: root
+        role: Root
+        home: /root
+        state: present
+      - name: raskal
+        role: Admin
+        email: labs@raskal.io
+        home: /home/raskal
+        state: present
+      packages:
+      - bind-utils
+      - conntrack-tools
+      - curl
+      - dnscrypt-proxy
+      - ethtool
+      - git
+      - htop
+      - iftop
+      - ipcalc
+      - iperf3
+      - kea
+      - mtr
+      - nano
+      - net-tools
+      - nftables
+      - nload
+      - nmap
+      - socat
+      - tcpdump
+      - tmux
+      - traceroute
+      - tree
+      - unbound
+      - wget
+      packages_absent:
+      - firewalld
+      - netbird
+      - systemd-resolved
+      configured_services:
+        dns:
+          id: dns
+          packages:
+          - unbound
+          - dnscrypt-proxy
+          templates:
+          - source: unbound.conf.j2
+            destination: /etc/unbound/unbound.conf
+          - source: dnscrypt-proxy.toml.j2
+            destination: /etc/dnscrypt-proxy/dnscrypt-proxy.toml
+        dhcp:
+          id: dhcp
+          packages:
+          - kea
+          templates:
+          - source: kea-dhcp4.conf.j2
+            destination: /etc/kea/kea-dhcp4.conf
+        firewall:
+          id: firewall
+          packages:
+          - nftables
+          templates:
+          - source: nftables.conf.j2
+            destination: /etc/nftables.conf
+      identity:
+        hostname: ultra64
+      profile: router
+      status: Operational
+      os: Fedora 44 Server Minimal
+      ip: 10.64.0.1
+      hw:
+        cpu: AMD RX-427BB Quad-Core APU
+        ram: 8GB (2x4GB) DDR3 SODIMM 1600 MT/s
+        gpu: Integrated AMD Radeon R7
+        storage:
+        - dev: M.2 Slot (Primary)
+          type: 64GB M.2 2280 SATA SSD
+          fs: ext4
+          mounts:
+          - /boot/efi (976M)
+          - / (54.7G)
+          - '[SWAP] (3G)'
+        slots:
+        - 'Low-profile PCIe 2.0 x8 (In Use: Intel 82571EB Dual-Port GbE)'
+        ports:
+        - 1 x GbE (Realtek)
+        - 2 x GbE (Intel)
+        - 4 x DisplayPort 1.2
+        - 4 x USB 3.0 / 4 x USB 2.0
+        - 1 x Serial / 1 x Parallel
+      net:
+        wan:
+          dev: enp1s0f0
+          mac: 00:24:81:81:e0:e4
+          spoof: 24:2F:D0:D1:2E:31
+        lan:
+          dev: enp1s0f1
+          mac: 00:24:81:81:e0:e5
+      opts:
+        grub_timeout: 1
+        kernel_args:
+        - panic=10
+      iface_wan_spoofed_mac: 24:2F:D0:D1:2E:31
+      hardware:
+        interfaces:
+          wan:
+            name: enp1s0f0
+            factory_mac: 00:24:81:81:e0:e4
+          lan:
+            name: enp1s0f1
+      network:
+        wan:
+          mac: 24:2F:D0:D1:2E:31
+        lan:
+          ip: 10.64.0.1/24
+          domain: rsk.al
+      host_services:
+        dhcp:
+          subnet: 10.64.0.0/24
+          range_start: 10.64.0.100
+          range_end: 10.64.0.200
+          dns_server: 10.64.0.1
+          static_leases:
+          - hostname: nitro
+            ip: 10.64.0.3
+            mac: 24:2F:D0:D1:2E:30
+          - hostname: nx
+            ip: 10.64.0.2
+            mac: 88:76:B9:8F:30:E0

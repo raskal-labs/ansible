@@ -1,5 +1,0 @@
-users:
-  gameboy:
-    public_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGCBAHN8wfMIQB53WMvtuwwIef5+6xx6dnWz3ojK3ZHJ"
-  minty:
-    public_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMZTtS3fiWvIMQzpZk//k6LJ+FKVaQA7NpHc7bBAj0pC"
