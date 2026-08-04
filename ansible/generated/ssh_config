@@ -1,0 +1,8 @@
+# Generated SSH config for orchestration
+Host ultra64
+    HostName 10.64.0.1
+    User root
+    IdentityFile ~/.ssh/id_ed25519
+    UserKnownHostsFile ansible/generated/known_hosts
+    StrictHostKeyChecking yes
+    PasswordAuthentication no
