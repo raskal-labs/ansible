@@ -34,6 +34,21 @@ def generate_inventory():
         # Create minimal structure if file doesn't exist
         inventory = {'all': {'hosts': {}}}
     
+    # Process all node files to populate hosts
+    for node_file in glob.glob('data/nodes/*.yaml'):
+        node_data = load_yaml(node_file)
+        
+        # Extract hostname and IP
+        hostname = node_data.get('identity', {}).get('hostname')
+        ip = node_data.get('ip')
+        
+        if hostname and ip:
+            # Add host to inventory with ansible_host for routing
+            inventory['all']['hosts'][hostname] = {
+                'ip': ip,
+                'ansible_host': ip
+            }
+    
     # Inject global_identities into the 'all' group
     if 'vars' not in inventory['all']:
         inventory['all']['vars'] = {}
