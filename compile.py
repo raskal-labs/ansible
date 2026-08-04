@@ -62,6 +62,11 @@ def generate_inventory():
     if 'ntp' in environment and 'servers' in environment['ntp']:
         inventory['all']['vars']['ntp_servers'] = environment['ntp']['servers']
     
+    # Inject all top-level environment variables (tz, etc.)
+    for key, value in environment.items():
+        if key != 'ntp':  # Skip ntp since we handle it specially above
+            inventory['all']['vars'][key] = value
+    
     # Write updated inventory
     with open(inventory_path, 'w') as f:
         yaml.dump(inventory, f, default_flow_style=False, sort_keys=False)
