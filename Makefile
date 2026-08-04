@@ -11,16 +11,16 @@ CONN         ?= smart
 
 # --- Variables & Paths ---
 DATA_DIR     := data
-GEN_DIR      := generated
-TOOLS_DIR    := tools
+GEN_DIR      := ansible/generated
+TOOLS_DIR    := ansible/tools
 ANSIBLE_DIR  := ansible
 
 ANSIBLE_CONFIG := $(ANSIBLE_DIR)/ansible.cfg
 export ANSIBLE_CONFIG
 
 INVENTORY    := $(GEN_DIR)/inventory.yaml
-PLAYBOOK     := $(ANSIBLE_DIR)/playbooks/site.yml
-COMPILER     := $(TOOLS_DIR)/compile.py
+PLAYBOOK     := $(ANSIBLE_DIR)/site.yml
+COMPILER     := compile.py
 LEGACY_TRANS := $(ANSIBLE_DIR)/inventory/transform.py
 VALIDATOR    := $(TOOLS_DIR)/validate_yaml.py
 
