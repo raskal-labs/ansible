@@ -1,0 +1,6 @@
+---
+- name: Install chrony package
+  ansible.builtin.dnf:
+    name: chrony
+    state: present
+  notify: restart chronyd

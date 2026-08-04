@@ -1,0 +1,9 @@
+---
+- name: Include chrony installation tasks
+  ansible.builtin.include_tasks: install.yml
+
+- name: Include chrony configuration tasks
+  ansible.builtin.include_tasks: config.yml
+
+- name: Include chrony service tasks
+  ansible.builtin.include_tasks: service.yml

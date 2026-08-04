@@ -20,6 +20,10 @@
       ansible.builtin.import_role:
         name: base
 
+    - name: Apply Time Synchronization
+      ansible.builtin.import_role:
+        name: chrony
+
     - name: Apply Router Roles
       block:
         - ansible.builtin.import_role:

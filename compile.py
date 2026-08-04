@@ -26,6 +26,9 @@ def generate_inventory():
     # Load identities
     identities = load_yaml('data/identities.yaml')
     
+    # Load environment data
+    environment = load_yaml('data/environment.yaml')
+    
     # Load existing inventory template or create base structure
     inventory_path = 'ansible/generated/inventory.yaml'
     if os.path.exists(inventory_path):
@@ -54,6 +57,10 @@ def generate_inventory():
         inventory['all']['vars'] = {}
     
     inventory['all']['vars']['global_identities'] = identities.get('system_accounts', [])
+    
+    # Inject NTP servers from environment data
+    if 'ntp' in environment and 'servers' in environment['ntp']:
+        inventory['all']['vars']['ntp_servers'] = environment['ntp']['servers']
     
     # Write updated inventory
     with open(inventory_path, 'w') as f:
