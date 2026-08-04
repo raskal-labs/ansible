@@ -38,11 +38,11 @@ check-tools:
 		(echo "Error: Missing ansible-playbook"; exit 1)
 
 validate:
-	@python3 tools/validate_yaml.py
+	@python3 ansible/tools/validate_yaml.py
 
 compile: validate
 ifndef SKIP_COMPILE
-	@python3 tools/compile.py
+	@python3 compile.py
 else
 	@echo "==> [SKIP] Skipping compilation step (using existing generated/inventory.yaml)"
 endif
