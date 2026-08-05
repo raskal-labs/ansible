@@ -67,6 +67,16 @@ all:
           - hostname: nx
             ip: 10.64.0.2
             mac: 88:76:B9:8F:30:E0
+        vpn:
+          security_profile: strict
+          port: 51820
+          privkey: '{{ vault_wg_ultra64_private_key }}'
+          host_id: 1
+          peers:
+          - name: gcp-aider
+            pubkey: TPc/hcMYdohDuuD9pkadydtGnUlOTf1q2e4lSYf8e04=
+            host_id: 5
+            route_lan: true
       packages:
       - conntrack-tools
       - ethtool
@@ -77,6 +87,7 @@ all:
       - nmap
       - socat
       - tcpdump
+      - wireguard-tools
       packages_absent:
       - firewalld
       - netbird
@@ -162,6 +173,7 @@ all:
     - traceroute
     - tree
     - wget
+    - wireguard-tools
     packages_absent:
     - dnscrypt-proxy
     - firewalld
@@ -196,3 +208,11 @@ all:
         templates:
         - source: kea-dhcp4.conf.j2
           destination: /etc/kea/kea-dhcp4.conf
+      vpn:
+        id: vpn
+        security_profile: strict
+        packages:
+        - wireguard-tools
+        templates:
+        - source: wg0.conf.j2
+          destination: /etc/wireguard/wg0.conf
