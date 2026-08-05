@@ -20,7 +20,7 @@ export ANSIBLE_CONFIG
 
 INVENTORY    := $(GEN_DIR)/inventory.yaml
 PLAYBOOK     := $(ANSIBLE_DIR)/site.yml
-COMPILER     := compile.py
+COMPILER     := $(TOOLS_DIR)/compile.py
 LEGACY_TRANS := $(ANSIBLE_DIR)/inventory/transform.py
 VALIDATOR    := $(TOOLS_DIR)/validate_yaml.py
 
@@ -42,25 +42,25 @@ validate:
 
 compile: validate
 ifndef SKIP_COMPILE
-	@python3 compile.py
+	@python3 $(COMPILER)
 else
 	@echo "==> [SKIP] Skipping compilation step (using existing generated/inventory.yaml)"
 endif
 
 dry-run: compile
-	@ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i generated/inventory.yaml ansible/playbooks/site.yml --check
+	@ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i $(INVENTORY) $(PLAYBOOK) --check
 
 apply: compile
-	@ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i generated/inventory.yaml ansible/playbooks/site.yml
+	@ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i $(INVENTORY) $(PLAYBOOK)
 
 snapshot:
-	@cp generated/inventory.yaml generated/inventory.bak
-	@echo "==> Saved snapshot to generated/inventory.bak"
+	@cp $(INVENTORY) $(GEN_DIR)/inventory.bak
+	@echo "==> Saved snapshot to $(GEN_DIR)/inventory.bak"
 
 restore-apply:
-	@cp generated/inventory.bak generated/inventory.yaml
-	@echo "==> Restored generated/inventory.bak"
-	@ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i generated/inventory.yaml ansible/playbooks/site.yml
+	@cp $(GEN_DIR)/inventory.bak $(INVENTORY)
+	@echo "==> Restored $(GEN_DIR)/inventory.bak"
+	@ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i $(INVENTORY) $(PLAYBOOK)
 
 inventory: compile
 	@echo "==> [INVENTORY] Generated inventory:"
