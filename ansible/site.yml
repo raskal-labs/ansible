@@ -34,6 +34,8 @@
             name: dhcp
         - ansible.builtin.import_role:
             name: vpn
+        - ansible.builtin.import_role:
+            name: avahi
       when: profile is defined and profile == 'router'
 
   handlers:

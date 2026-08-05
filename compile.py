@@ -63,6 +63,19 @@ def load_services_data():
     return services_data
 
 
+def load_networks_data():
+    """Load all network configuration files."""
+    networks_data = {}
+    networks_dir = os.path.join("data", "networks")
+    
+    if os.path.exists(networks_dir):
+        for network_file in glob.glob(os.path.join(networks_dir, "*.yaml")):
+            network_name = os.path.splitext(os.path.basename(network_file))[0]
+            networks_data[network_name] = load_yaml(network_file)
+    
+    return networks_data
+
+
 def generate_inventory():
     """Generate ansible/generated/inventory.yaml with complete data preservation."""
     data_dir = "data"
@@ -72,6 +85,7 @@ def generate_inventory():
     identities = load_yaml(os.path.join(data_dir, 'identities.yaml'))
     environment = load_yaml(os.path.join(data_dir, 'environment.yaml'))
     services_data = load_services_data()
+    networks_data = load_networks_data()
     
     # Load Headscale service data if it exists
     headscale_data = services_data.get('headscale', {})
@@ -131,6 +145,10 @@ def generate_inventory():
     # Inject all services data for reference
     if services_data:
         inventory['all']['vars']['services'] = services_data
+    
+    # Inject all networks data for reference
+    if networks_data:
+        inventory['all']['vars']['networks'] = networks_data
     
     # Write updated inventory
     inventory_path = os.path.join(output_dir, 'inventory.yaml')

@@ -9,8 +9,8 @@ ListenPort = {{ host_services.vpn.port }}
 # {{ peer.name }}
 PublicKey = {{ peer.pubkey }}
 {% if peer.route_lan | default(false) %}
-AllowedIPs = {{ subnets.vpn.prefix }}.{{ peer.host_id }}/32, {{ subnets.lan.cidr }}
+AllowedIPs = {{ subnets.vpn.prefix }}.{{ peer.host_id }}/32, {{ subnets.lan.cidr }}{% if peer.extra_ips is defined %}, {{ peer.extra_ips | join(', ') }}{% endif %}
 {% else %}
-AllowedIPs = {{ subnets.vpn.prefix }}.{{ peer.host_id }}/32
+AllowedIPs = {{ subnets.vpn.prefix }}.{{ peer.host_id }}/32{% if peer.extra_ips is defined %}, {{ peer.extra_ips | join(', ') }}{% endif %}
 {% endif %}
 {% endfor %}
