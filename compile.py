@@ -29,6 +29,9 @@ def generate_inventory():
     # Load environment data
     environment = load_yaml('data/environment.yaml')
     
+    # Load Headscale service data
+    headscale_data = load_yaml('data/services/headscale.yaml')
+    
     # Load existing inventory template or create base structure
     inventory_path = 'ansible/generated/inventory.yaml'
     if os.path.exists(inventory_path):
@@ -57,6 +60,12 @@ def generate_inventory():
         inventory['all']['vars'] = {}
     
     inventory['all']['vars']['global_identities'] = identities.get('system_accounts', [])
+    
+    # Inject Headscale routing variables
+    inventory['all']['vars']['headscale'] = {
+        'mesh_subnet': headscale_data.get('mesh_subnet'),
+        'mesh_gateway_ip': headscale_data.get('mesh_gateway_ip')
+    }
     
     # Inject all top-level environment variables (tz, etc.)
     for key, value in environment.items():

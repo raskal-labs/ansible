@@ -4,3 +4,8 @@ Name={{ hardware.interfaces.lan.name }}
 [Network]
 Address={{ network.lan.ip }}
 IPForward=yes
+
+# Route Headscale Mesh traffic back to the internal gateway
+[Route]
+Destination={{ headscale.mesh_subnet }}
+Gateway={{ headscale.mesh_gateway_ip }}

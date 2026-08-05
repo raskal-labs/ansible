@@ -1,0 +1,5 @@
+---
+id: headscale
+mesh_subnet: 100.64.0.0/24
+mesh_gateway_ip: 10.64.0.4
+description: Headscale VPN mesh coordination service

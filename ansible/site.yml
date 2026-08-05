@@ -31,8 +31,6 @@
         - ansible.builtin.import_role:
             name: firewall
         - ansible.builtin.import_role:
-            name: dns
-        - ansible.builtin.import_role:
             name: dhcp
       when: profile is defined and profile == 'router'
 
@@ -53,14 +51,6 @@
     - name: Restart nftables
       ansible.builtin.systemd:
         name: nftables
-        state: restarted
-    - name: Restart dnscrypt-proxy
-      ansible.builtin.systemd:
-        name: dnscrypt-proxy
-        state: restarted
-    - name: Restart unbound
-      ansible.builtin.systemd:
-        name: unbound
         state: restarted
     - name: Restart kea-dhcp4
       ansible.builtin.systemd:
