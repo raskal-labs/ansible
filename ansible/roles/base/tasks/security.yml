@@ -1,0 +1,57 @@
+---
+# Universal Security Profile Application
+# Applies systemd security overrides based on service security_profile declarations
+
+- name: Collect services requiring security profiles
+  ansible.builtin.set_fact:
+    secured_services: "{{ secured_services | default([]) + [{'name': item.key, 'profile': item.value.security_profile, 'service_name': service_mapping[item.key] | default(item.key)}] }}"
+  loop: "{{ services | dict2items }}"
+  when: 
+    - item.value.security_profile is defined
+    - service_mapping[item.key] is defined
+  vars:
+    # Map service IDs to actual systemd service names
+    service_mapping:
+      dhcp: "kea-dhcp4"
+      firewall: "nftables"
+      headscale: "headscale"
+
+- name: Collect host services requiring security profiles
+  ansible.builtin.set_fact:
+    secured_services: "{{ secured_services | default([]) + [{'name': item.key, 'profile': item.value.security_profile, 'service_name': host_service_mapping[item.key] | default(item.key)}] }}"
+  loop: "{{ host_services | dict2items }}"
+  when: 
+    - host_services is defined
+    - item.value.security_profile is defined
+    - host_service_mapping[item.key] is defined
+  vars:
+    # Map host service IDs to actual systemd service names
+    host_service_mapping:
+      dhcp: "kea-dhcp4"
+
+- name: Add chrony service with strict security profile
+  ansible.builtin.set_fact:
+    secured_services: "{{ secured_services | default([]) + [{'name': 'chrony', 'profile': 'strict', 'service_name': 'chronyd'}] }}"
+
+- name: Create systemd override directories for secured services
+  ansible.builtin.file:
+    path: "{{ paths.etc }}/systemd/system/{{ item.service_name }}.service.d"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  loop: "{{ secured_services | default([]) }}"
+
+- name: Apply universal security profiles to services
+  ansible.builtin.template:
+    src: "systemd-override.conf.j2"
+    dest: "{{ paths.etc }}/systemd/system/{{ item.service_name }}.service.d/security.conf"
+    owner: root
+    group: root
+    mode: '0644'
+  loop: "{{ secured_services | default([]) }}"
+  vars:
+    service_name: "{{ item.service_name }}"
+    service_security_profile: "{{ item.profile }}"
+  notify:
+    - Reload systemd daemon

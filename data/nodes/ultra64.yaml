@@ -52,6 +52,7 @@ network:
     domain: rsk.al
 host_services:
   dhcp:
+    security_profile: hardened
     subnet: 10.64.0.0/24
     range_start: 10.64.0.100
     range_end: 10.64.0.200

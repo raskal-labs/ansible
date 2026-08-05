@@ -5,24 +5,6 @@
 - name: Include chrony configuration tasks
   ansible.builtin.include_tasks: config.yml
 
-- name: Create systemd override directory for chronyd
-  ansible.builtin.file:
-    path: "{{ paths.etc }}/systemd/system/chronyd.service.d"
-    state: directory
-    owner: root
-    group: root
-    mode: '0755'
-
-- name: Deploy systemd security hardening for chronyd
-  ansible.builtin.template:
-    src: "chrony-security.conf.j2"
-    dest: "{{ paths.etc }}/systemd/system/chronyd.service.d/security.conf"
-    owner: root
-    group: root
-    mode: '0644'
-  notify:
-    - Reload systemd daemon
-    - restart chronyd
 
 - name: Include chrony service tasks
   ansible.builtin.include_tasks: service.yml

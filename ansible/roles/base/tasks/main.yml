@@ -47,3 +47,6 @@
   retries: 3
   delay: 5
   when: packages is defined and packages | length > 0
+
+- name: Apply universal security profiles
+  ansible.builtin.include_tasks: security.yml

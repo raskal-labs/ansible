@@ -1,5 +1,6 @@
 ---
 id: dhcp
+security_profile: hardened
 packages:
   - kea
 templates:
