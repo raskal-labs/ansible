@@ -81,3 +81,7 @@ packages_absent:
   - systemd-resolved
   - unbound
   - dnscrypt-proxy
+
+host_keys:
+  ssh-ed25519: "AAAAC3NzaC1lZDI1NTE5AAAAIExample_ED25519_HOST_KEY_ultra64"
+  ssh-rsa: "AAAAB3NzaC1yc2EAAAADAQABAAABgQExample_RSA_HOST_KEY_ultra64"

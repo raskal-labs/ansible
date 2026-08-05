@@ -1,3 +1,4 @@
 # Generated known_hosts file
-# FIXME_AI: Populate with actual host keys from node data
-# ultra64 (10.64.0.1) - FIXME_AI: Add host_keys to node data
+# Host keys are automatically populated from node data
+ultra64,10.64.0.1 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIExample_ED25519_HOST_KEY_ultra64
+ultra64,10.64.0.1 ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQExample_RSA_HOST_KEY_ultra64

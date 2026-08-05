@@ -101,17 +101,27 @@ def generate_known_hosts():
         # Extract hostname and IP
         hostname = node_data.get('identity', {}).get('hostname')
         ip = node_data.get('ip')
+        host_keys = node_data.get('host_keys', {})
         
         if hostname and ip:
-            # FIXME_AI: Need host_keys data in node files to generate proper known_hosts entries
-            # For now, create placeholder entries
-            known_hosts_entries.append(f"# {hostname} ({ip}) - FIXME_AI: Add host_keys to node data")
+            # Generate known_hosts entries for each host key type
+            for key_type, key_data in host_keys.items():
+                if isinstance(key_data, str):
+                    # Simple string format: host_keys: { ssh-ed25519: "AAAAC3..." }
+                    known_hosts_entries.append(f"{hostname},{ip} {key_type} {key_data}")
+                elif isinstance(key_data, dict) and 'key' in key_data:
+                    # Dict format: host_keys: { ssh-ed25519: { key: "AAAAC3...", comment: "..." } }
+                    known_hosts_entries.append(f"{hostname},{ip} {key_type} {key_data['key']}")
+            
+            # If no host keys available, add a placeholder comment
+            if not host_keys:
+                known_hosts_entries.append(f"# {hostname} ({ip}) - No host keys configured")
     
     # Write known_hosts file
     known_hosts_path = os.path.join(output_dir, 'known_hosts')
     with open(known_hosts_path, 'w') as f:
         f.write("# Generated known_hosts file\n")
-        f.write("# FIXME_AI: Populate with actual host keys from node data\n")
+        f.write("# Host keys are automatically populated from node data\n")
         for entry in known_hosts_entries:
             f.write(f"{entry}\n")
 
