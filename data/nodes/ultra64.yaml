@@ -45,7 +45,7 @@ hardware:
       factory_mac: 00:24:81:81:e0:e4
     lan:
       name: enp1s0f1
-network:
+network_config:
   wan:
     mac: 24:2F:D0:D1:2E:31
   lan:
