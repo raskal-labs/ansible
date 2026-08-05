@@ -1,72 +1,171 @@
 #!/usr/bin/env python3
-import os
-import yaml
+"""
+Ansible Infrastructure Compiler
+Generates inventory, known_hosts, and ssh_config from data files.
+"""
 
-DATA_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../data"))
-OUTPUT_FILE = os.path.abspath(os.path.join(os.path.dirname(__file__), "../generated/inventory.yaml"))
+import os
+import sys
+import yaml
+import glob
+
 
 def load_yaml(filepath):
-    if not os.path.exists(filepath):
-        return {}
+    """Load YAML file and return parsed content."""
     with open(filepath, 'r') as f:
-        return yaml.safe_load(f) or {}
+        return yaml.safe_load(f)
+
+
+def ensure_directory(path):
+    """Create directory if it doesn't exist."""
+    os.makedirs(path, exist_ok=True)
+
+
+def generate_inventory():
+    """Generate ansible/generated/inventory.yaml with global_identities."""
+    # Adjust paths to work from tools directory
+    data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../data"))
+    output_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../generated"))
+    
+    # Load identities
+    identities = load_yaml(os.path.join(data_dir, 'identities.yaml'))
+    
+    # Load environment data
+    environment = load_yaml(os.path.join(data_dir, 'environment.yaml'))
+    
+    # Load Headscale service data
+    headscale_data = load_yaml(os.path.join(data_dir, 'services/headscale.yaml'))
+    
+    # Load existing inventory template or create base structure
+    inventory_path = os.path.join(output_dir, 'inventory.yaml')
+    if os.path.exists(inventory_path):
+        inventory = load_yaml(inventory_path)
+    else:
+        # Create minimal structure if file doesn't exist
+        inventory = {'all': {'hosts': {}}}
+    
+    # Process all node files to populate hosts
+    for node_file in glob.glob(os.path.join(data_dir, 'nodes/*.yaml')):
+        node_data = load_yaml(node_file)
+        
+        # Extract hostname and IP
+        hostname = node_data.get('identity', {}).get('hostname')
+        ip = node_data.get('ip')
+        
+        if hostname and ip:
+            # Add host to inventory with ansible_host for routing
+            inventory['all']['hosts'][hostname] = {
+                'ip': ip,
+                'ansible_host': ip
+            }
+    
+    # Inject global_identities into the 'all' group
+    if 'vars' not in inventory['all']:
+        inventory['all']['vars'] = {}
+    
+    inventory['all']['vars']['global_identities'] = identities.get('system_accounts', [])
+    
+    # Inject Headscale routing variables
+    inventory['all']['vars']['headscale'] = {
+        'mesh_subnet': headscale_data.get('mesh_subnet'),
+        'mesh_gateway_ip': headscale_data.get('mesh_gateway_ip')
+    }
+    
+    # Inject all top-level environment variables (tz, etc.)
+    for key, value in environment.items():
+        if key == 'ntp':
+            # Handle NTP specially - extract servers if available
+            if isinstance(value, dict) and 'servers' in value:
+                inventory['all']['vars']['ntp_servers'] = value['servers']
+        else:
+            # Inject other top-level environment variables directly
+            inventory['all']['vars'][key] = value
+    
+    # Write updated inventory
+    with open(inventory_path, 'w') as f:
+        yaml.dump(inventory, f, default_flow_style=False, sort_keys=False)
+
+
+def generate_known_hosts():
+    """Generate ansible/generated/known_hosts from node data."""
+    # Adjust paths to work from tools directory
+    data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../data"))
+    output_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../generated"))
+    
+    known_hosts_entries = []
+    
+    # Process all node files
+    for node_file in glob.glob(os.path.join(data_dir, 'nodes/*.yaml')):
+        node_data = load_yaml(node_file)
+        
+        # Extract hostname and IP
+        hostname = node_data.get('identity', {}).get('hostname')
+        ip = node_data.get('ip')
+        
+        if hostname and ip:
+            # FIXME_AI: Need host_keys data in node files to generate proper known_hosts entries
+            # For now, create placeholder entries
+            known_hosts_entries.append(f"# {hostname} ({ip}) - FIXME_AI: Add host_keys to node data")
+    
+    # Write known_hosts file
+    known_hosts_path = os.path.join(output_dir, 'known_hosts')
+    with open(known_hosts_path, 'w') as f:
+        f.write("# Generated known_hosts file\n")
+        f.write("# FIXME_AI: Populate with actual host keys from node data\n")
+        for entry in known_hosts_entries:
+            f.write(f"{entry}\n")
+
+
+def generate_ssh_config():
+    """Generate ansible/generated/ssh_config for orchestration client."""
+    # Adjust paths to work from tools directory
+    data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../data"))
+    output_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../generated"))
+    
+    # Load ultra64 node data
+    ultra64_data = load_yaml(os.path.join(data_dir, 'nodes/ultra64.yaml'))
+    
+    hostname = ultra64_data.get('identity', {}).get('hostname', 'ultra64')
+    ip = ultra64_data.get('ip', 'FIXME_AI: No IP found in ultra64 node data')
+    
+    ssh_config_content = f"""# Generated SSH config for orchestration
+Host {hostname}
+    HostName {ip}
+    User root
+    IdentityFile ~/.ssh/id_ed25519
+    UserKnownHostsFile ansible/generated/known_hosts
+    StrictHostKeyChecking yes
+    PasswordAuthentication no
+"""
+    
+    # Write ssh_config file
+    ssh_config_path = os.path.join(output_dir, 'ssh_config')
+    with open(ssh_config_path, 'w') as f:
+        f.write(ssh_config_content)
+
 
 def main():
-    env_data = load_yaml(os.path.join(DATA_DIR, "environment.yaml"))
+    """Main compiler function."""
+    # Ensure generated directory exists (relative to tools directory)
+    output_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../generated"))
+    ensure_directory(output_dir)
     
-    # Load entire service definitions, not just packages
-    services_dict = {}
-    services_pkgs = []
-    services_absent = []
-    services_dir = os.path.join(DATA_DIR, "services")
-    
-    if os.path.exists(services_dir):
-        for f in os.listdir(services_dir):
-            if f.endswith('.yaml'):
-                svc = load_yaml(os.path.join(services_dir, f))
-                svc_id = svc.get('id', f.replace('.yaml', ''))
-                services_dict[svc_id] = svc
-                services_pkgs.extend(svc.get('packages', []))
-                services_absent.extend(svc.get('packages_absent', []))
-
-    inventory = {"all": {"hosts": {}}}
-    
-    nodes_dir = os.path.join(DATA_DIR, "nodes")
-    if os.path.exists(nodes_dir):
-        for f in os.listdir(nodes_dir):
-            if not f.endswith('.yaml'): continue
-            
-            node = load_yaml(os.path.join(nodes_dir, f))
-            hostname = node.get('identity', {}).get('hostname', 'unknown')
-            
-            # Aggregate Packages
-            raw_packages = []
-            raw_packages.extend(env_data.get('packages', []))
-            raw_packages.extend(services_pkgs)
-            raw_packages.extend(node.get('packages', []))
-            
-            # Aggregate Absent Packages
-            raw_absent = []
-            raw_absent.extend(env_data.get('packages_absent', []))
-            raw_absent.extend(services_absent)
-            raw_absent.extend(node.get('packages_absent', []))
-            
-            # Start host_vars with env, add modular services dict, then node data
-            host_vars = dict(env_data)
-            host_vars['configured_services'] = services_dict
-            host_vars.update(node)
-            
-            # Overwrite packages with deterministic deduplicated lists
-            host_vars['packages'] = sorted(list(dict.fromkeys(raw_packages)))
-            host_vars['packages_absent'] = sorted(list(dict.fromkeys(raw_absent)))
-            
-            inventory["all"]["hosts"][hostname] = host_vars
-
-    os.makedirs(os.path.dirname(OUTPUT_FILE), exist_ok=True)
-    with open(OUTPUT_FILE, 'w') as f:
-        yaml.dump(inventory, f, default_flow_style=False, sort_keys=False)
+    try:
+        print("Generating inventory...")
+        generate_inventory()
         
-    print(f"Compiler finished. Artifact saved to: {OUTPUT_FILE}")
+        print("Generating known_hosts...")
+        generate_known_hosts()
+        
+        print("Generating ssh_config...")
+        generate_ssh_config()
+        
+        print("Compilation complete!")
+        
+    except Exception as e:
+        print(f"Error during compilation: {e}", file=sys.stderr)
+        sys.exit(1)
+
 
 if __name__ == '__main__':
     main()
