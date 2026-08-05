@@ -55,6 +55,7 @@ all:
           domain: rsk.al
       host_services:
         dhcp:
+          security_profile: hardened
           subnet: 10.64.0.0/24
           range_start: 10.64.0.100
           range_end: 10.64.0.200
@@ -172,6 +173,7 @@ all:
     services:
       firewall:
         id: firewall
+        security_profile: strict
         packages:
         - nftables
         templates:
@@ -179,11 +181,13 @@ all:
           destination: /etc/nftables.conf
       headscale:
         id: headscale
+        security_profile: hardened
         mesh_subnet: 100.64.0.0/24
         mesh_gateway_ip: 10.64.0.4
         description: Headscale VPN mesh coordination service
       dhcp:
         id: dhcp
+        security_profile: hardened
         packages:
         - kea
         templates:
