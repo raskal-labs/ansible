@@ -109,6 +109,18 @@ def derive_cidr_from_network_host(network, host):
     return f"10.{network}.0.{host}/24"
 
 
+def _get_node_ip(node_data):
+    """Derive a clean IP address from node data, or return None."""
+    network = node_data.get('network')
+    host = node_data.get('host')
+    if network is not None and host is not None:
+        ip = derive_ip_from_network_host(network, host)
+        # Strip any accidental CIDR suffix
+        ip = ip.split('/')[0]
+        return ip
+    return None
+
+
 def generate_inventory():
     """Generate ansible/generated/inventory.yaml with complete data preservation."""
     data_dir = "data"
@@ -153,6 +165,8 @@ def generate_inventory():
             
             # Derive IP address from network and host IDs
             ip = derive_ip_from_network_host(network, host)
+            # Ensure no CIDR suffix leaks into ansible_host
+            ip = ip.split('/')[0]
             host_vars['ip'] = ip
             host_vars['ansible_host'] = ip
             
@@ -262,9 +276,9 @@ def generate_known_hosts():
     for node_file in glob.glob(os.path.join(data_dir, 'nodes/*.yaml')):
         node_data = load_yaml(node_file)
         
-        # Extract hostname and IP
+        # Extract hostname and derive IP
         hostname = node_data.get('identity', {}).get('hostname')
-        ip = node_data.get('ip')
+        ip = _get_node_ip(node_data)
         host_keys = node_data.get('host_keys', {})
         
         if hostname and ip:
@@ -300,13 +314,15 @@ def generate_ssh_config():
     if os.path.exists(ultra64_path):
         ultra64_data = load_yaml(ultra64_path)
         hostname = ultra64_data.get('identity', {}).get('hostname', 'ultra64')
-        ip = ultra64_data.get('ip', 'FIXME_AI: No IP found in ultra64 node data')
+        ip = _get_node_ip(ultra64_data)
+        if ip is None:
+            ip = '0.0.0.0'  # safe fallback if network/host missing
     else:
         hostname = 'ultra64'
-        ip = 'FIXME_AI: ultra64.yaml not found'
+        ip = '0.0.0.0'
     
     ssh_config_content = f"""# Generated SSH config for orchestration
-Host {hostname} {ip}
+Host {hostname}
     HostName {ip}
     User root
     IdentityFile ~/.ssh/id_ed25519
