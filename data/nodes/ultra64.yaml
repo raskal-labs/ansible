@@ -64,6 +64,16 @@ host_services:
     - hostname: nx
       ip: 10.64.0.2
       mac: 88:76:B9:8F:30:E0
+  vpn:
+    security_profile: strict
+    port: 51820
+    privkey: "{{ vault_wg_ultra64_private_key }}"
+    host_id: 1
+    peers:
+      - name: gcp-aider
+        pubkey: "fk2Sk/T96G0h66xrHhfjKH2nsXRuPC8WPc0otP9q9B8="
+        host_id: 10
+        route_lan: true
 
 packages:
   - conntrack-tools
@@ -75,6 +85,7 @@ packages:
   - nmap
   - socat
   - tcpdump
+  - wireguard-tools
 
 packages_absent:
   - firewalld

@@ -19,6 +19,9 @@ table inet filter {
         
         # Allow ICMP (Ping)
         ip protocol icmp accept
+        
+        # Allow incoming VPN handshake on WAN
+        iifname "{{ hardware.interfaces.wan.name }}" udp dport {{ host_services.vpn.port | default(51820) }} accept
     }
 
     chain forward {
@@ -29,6 +32,9 @@ table inet filter {
         
         # Allow LAN ({{ hardware.interfaces.lan.name }}) to route out to WAN ({{ hardware.interfaces.wan.name }})
         iifname "{{ hardware.interfaces.lan.name }}" oifname "{{ hardware.interfaces.wan.name }}" accept
+        
+        # Allow VPN clients (wg0) to route traffic into the LAN
+        iifname "wg0" oifname "{{ hardware.interfaces.lan.name }}" accept
     }
 }
 

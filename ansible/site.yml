@@ -32,6 +32,8 @@
             name: firewall
         - ansible.builtin.import_role:
             name: dhcp
+        - ansible.builtin.import_role:
+            name: vpn
       when: profile is defined and profile == 'router'
 
   handlers:

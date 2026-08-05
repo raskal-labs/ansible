@@ -1,0 +1,8 @@
+---
+id: vpn
+security_profile: strict
+packages:
+  - wireguard-tools
+templates:
+  - source: wg0.conf.j2
+    destination: /etc/wireguard/wg0.conf
