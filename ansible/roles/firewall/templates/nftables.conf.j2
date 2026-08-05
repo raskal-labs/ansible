@@ -35,6 +35,9 @@ table inet filter {
         
         # Allow VPN clients (wg0) to route traffic into the LAN
         iifname "wg0" oifname "{{ hardware.interfaces.lan.name }}" accept
+
+        # Allow SSH from VPN
+        iifname "wg0" tcp dport 22 accept
     }
 }
 

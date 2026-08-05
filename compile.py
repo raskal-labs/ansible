@@ -193,12 +193,12 @@ def generate_ssh_config():
         ip = 'FIXME_AI: ultra64.yaml not found'
     
     ssh_config_content = f"""# Generated SSH config for orchestration
-Host {hostname}
+Host {hostname} {ip}
     HostName {ip}
     User root
     IdentityFile ~/.ssh/id_ed25519
-    UserKnownHostsFile ansible/generated/known_hosts
-    StrictHostKeyChecking yes
+    UserKnownHostsFile /dev/null
+    StrictHostKeyChecking no
     PasswordAuthentication no
 """
     
