@@ -76,6 +76,39 @@ def load_networks_data():
     return networks_data
 
 
+def derive_network_calculations(networks_data):
+    """Derive calculated network values from conceptual data."""
+    derived_networks = {}
+    
+    for network_name, network_data in networks_data.items():
+        if 'network' in network_data:
+            network_id = network_data['network']
+            gateway_host = network_data.get('gateway_host', 1)
+            
+            # Calculate derived values
+            derived_networks[network_name] = {
+                'id': network_data.get('id', network_name),
+                'network': network_id,
+                'cidr': f"10.{network_id}.0.0/24",
+                'gateway': f"10.{network_id}.0.{gateway_host}",
+                'subnet_mask': "255.255.255.0",
+                'broadcast': f"10.{network_id}.0.255",
+                'network_address': f"10.{network_id}.0.0"
+            }
+    
+    return derived_networks
+
+
+def derive_ip_from_network_host(network, host):
+    """Calculate IP address from network and host IDs."""
+    return f"10.{network}.0.{host}"
+
+
+def derive_cidr_from_network_host(network, host):
+    """Calculate CIDR from network and host IDs."""
+    return f"10.{network}.0.{host}/24"
+
+
 def generate_inventory():
     """Generate ansible/generated/inventory.yaml with complete data preservation."""
     data_dir = "data"
@@ -86,6 +119,9 @@ def generate_inventory():
     environment = load_yaml(os.path.join(data_dir, 'environment.yaml'))
     services_data = load_services_data()
     networks_data = load_networks_data()
+    
+    # Derive calculated network values
+    derived_networks = derive_network_calculations(networks_data)
     
     # Load Headscale service data if it exists
     headscale_data = services_data.get('headscale', {})
@@ -106,15 +142,56 @@ def generate_inventory():
     
     # Process all node files to populate hosts
     for node_name, node_data in nodes_data.items():
-        # Extract hostname and IP
+        # Extract hostname and derive IP from network/host
         hostname = node_data.get('identity', {}).get('hostname')
-        ip = node_data.get('ip')
+        network = node_data.get('network')
+        host = node_data.get('host')
         
-        if hostname and ip:
+        if hostname and network is not None and host is not None:
             # Start with a complete copy of all node data
             host_vars = dict(node_data)
-            # Add ansible_host for Ansible connectivity
+            
+            # Derive IP address from network and host IDs
+            ip = derive_ip_from_network_host(network, host)
+            host_vars['ip'] = ip
             host_vars['ansible_host'] = ip
+            
+            # Derive network configuration if present
+            if 'network' in host_vars:
+                host_vars['network_cidr'] = f"10.{network}.0.0/24"
+                host_vars['network_gateway'] = f"10.{network}.0.1"
+            
+            # Process host_services for derived values
+            if 'host_services' in host_vars:
+                # Process DHCP service
+                if 'dhcp' in host_vars['host_services']:
+                    dhcp_config = host_vars['host_services']['dhcp']
+                    if 'network' in dhcp_config:
+                        dhcp_network = dhcp_config['network']
+                        dhcp_config['subnet'] = f"10.{dhcp_network}.0.0/24"
+                        dhcp_config['range_start'] = f"10.{dhcp_network}.0.{dhcp_config['range_start']}"
+                        dhcp_config['range_end'] = f"10.{dhcp_network}.0.{dhcp_config['range_end']}"
+                        if 'dns_host' in dhcp_config:
+                            dhcp_config['dns_server'] = f"10.{dhcp_network}.0.{dhcp_config['dns_host']}"
+                        
+                        # Process static leases
+                        if 'static_leases' in dhcp_config:
+                            for lease in dhcp_config['static_leases']:
+                                if 'network' in lease and 'host' in lease:
+                                    lease['ip'] = derive_ip_from_network_host(lease['network'], lease['host'])
+                
+                # Process VPN service
+                if 'vpn' in host_vars['host_services']:
+                    vpn_config = host_vars['host_services']['vpn']
+                    if 'peers' in vpn_config:
+                        for peer in vpn_config['peers']:
+                            if 'extra_networks' in peer:
+                                peer['extra_ips'] = []
+                                for extra_net in peer['extra_networks']:
+                                    if 'network' in extra_net and 'host' in extra_net:
+                                        extra_ip = derive_cidr_from_network_host(extra_net['network'], extra_net['host'])
+                                        peer['extra_ips'].append(extra_ip)
+            
             inventory['all']['hosts'][hostname] = host_vars
     
     # Inject global_identities into the 'all' group
@@ -142,13 +219,31 @@ def generate_inventory():
     inventory['all']['vars']['packages'] = packages
     inventory['all']['vars']['packages_absent'] = packages_absent
     
-    # Inject all services data for reference
-    if services_data:
-        inventory['all']['vars']['services'] = services_data
     
-    # Inject all networks data for reference
-    if networks_data:
-        inventory['all']['vars']['networks'] = networks_data
+    # Inject derived networks data for reference
+    if derived_networks:
+        inventory['all']['vars']['networks'] = derived_networks
+    
+    # Process services data for derived values
+    processed_services = {}
+    for service_name, service_data in services_data.items():
+        processed_service = dict(service_data)
+        
+        # Process Caddy service backends
+        if service_name == 'caddy' and 'services' in processed_service:
+            for caddy_service in processed_service['services']:
+                if 'backend_network' in caddy_service and 'backend_host' in caddy_service:
+                    backend_ip = derive_ip_from_network_host(
+                        caddy_service['backend_network'], 
+                        caddy_service['backend_host']
+                    )
+                    caddy_service['backend'] = f"{backend_ip}:{caddy_service['backend_port']}"
+        
+        processed_services[service_name] = processed_service
+    
+    # Inject processed services data
+    if processed_services:
+        inventory['all']['vars']['services'] = processed_services
     
     # Write updated inventory
     inventory_path = os.path.join(output_dir, 'inventory.yaml')
