@@ -3,4 +3,9 @@
   ansible.builtin.dnf:
     name: chrony
     state: present
+    update_cache: yes
+  register: dnf_result
+  until: dnf_result is success
+  retries: 3
+  delay: 5
   notify: restart chronyd
