@@ -58,13 +58,14 @@ def generate_inventory():
     
     inventory['all']['vars']['global_identities'] = identities.get('system_accounts', [])
     
-    # Inject NTP servers from environment data
-    if 'ntp' in environment and 'servers' in environment['ntp']:
-        inventory['all']['vars']['ntp_servers'] = environment['ntp']['servers']
-    
     # Inject all top-level environment variables (tz, etc.)
     for key, value in environment.items():
-        if key != 'ntp':  # Skip ntp since we handle it specially above
+        if key == 'ntp':
+            # Handle NTP specially - extract servers if available
+            if isinstance(value, dict) and 'servers' in value:
+                inventory['all']['vars']['ntp_servers'] = value['servers']
+        else:
+            # Inject other top-level environment variables directly
             inventory['all']['vars'][key] = value
     
     # Write updated inventory
