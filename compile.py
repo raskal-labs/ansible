@@ -97,9 +97,10 @@ def generate_inventory():
         ip = node_data.get('ip')
         
         if hostname and ip:
-            # Inject all node data + ansible_host for routing
-            host_vars = dict(node_data)
-            host_vars['ansible_host'] = ip
+            # Deep copy all node data and add ansible_host
+            host_vars = {}
+            host_vars.update(node_data)  # Copy all original node data
+            host_vars['ansible_host'] = ip  # Add Ansible routing
             inventory['all']['hosts'][hostname] = host_vars
     
     # Inject global_identities into the 'all' group
