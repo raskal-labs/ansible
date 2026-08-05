@@ -2,3 +2,4 @@
 .aider*
 .env
 ansible_core/.venv/
+./generated
