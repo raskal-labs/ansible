@@ -20,7 +20,7 @@ export ANSIBLE_CONFIG
 
 INVENTORY    := $(GEN_DIR)/inventory.yaml
 PLAYBOOK     := $(ANSIBLE_DIR)/site.yml
-COMPILER     := compile.py
+COMPILER     := ./compile.py
 LEGACY_TRANS := $(ANSIBLE_DIR)/inventory/transform.py
 VALIDATOR    := $(TOOLS_DIR)/validate_yaml.py
 
