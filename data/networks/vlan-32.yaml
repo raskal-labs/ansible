@@ -1,0 +1,6 @@
+---
+id: vlan-32
+type: network
+ipv4:
+  subnet: "10.32.0.0/24"
+  gateway: "10.32.0.1"

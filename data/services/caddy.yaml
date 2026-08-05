@@ -1,0 +1,29 @@
+---
+id: caddy
+security_profile: hardened
+packages:
+  - caddy
+services:
+  # The Apex placeholder (update the IP when ready)
+  - name: apex
+    domain: "raskal.io"
+    backend: "10.64.0.X:80"
+    auth_mode: "native_oidc"
+
+  # Internal Proxmox Route 1
+  - name: proxmox_main
+    domain: "gamecube.rsk.al"
+    backend: "10.64.0.4:8006"
+    auth_mode: "internal_only"
+
+  # Internal Proxmox Route 2 (Alias)
+  - name: proxmox_alias
+    domain: "gcn.rsk.al"
+    backend: "10.64.0.4:8006"
+    auth_mode: "internal_only"
+
+  # Public Proxmox Route
+  - name: proxmox_public
+    domain: "gamecube.raskal.io"
+    backend: "10.64.0.4:8006"
+    auth_mode: "native_oidc"

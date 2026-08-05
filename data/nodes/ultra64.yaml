@@ -70,9 +70,12 @@ host_services:
     privkey: "{{ vault_wg_ultra64_private_key }}"
     host_id: 1
     peers:
+    peers:
       - name: gcp-aider
-        pubkey: "fk2Sk/T96G0h66xrHhfjKH2nsXRuPC8WPc0otP9q9B8="
-        host_id: 10
+        pubkey: "TPc/hcMYdohDuuD9pkadydtGnUlOTf1q2e4lSYf8e04="
+        host_id: 5
+            extra_ips:
+            - "10.64.0.5/32"
         route_lan: true
 
 packages:
