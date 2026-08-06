@@ -163,6 +163,11 @@ def generate_inventory():
             # Start with a complete copy of all node data
             host_vars = dict(node_data)
             
+            # Set ansible_user from conceptual admin_user key
+            host_vars['ansible_user'] = host_vars.get('admin_user', 'root')
+            # Disable privilege escalation because we connect as root
+            host_vars['ansible_become'] = False
+            
             # Derive IP address from network and host IDs
             ip = derive_ip_from_network_host(network, host)
             # Ensure no CIDR suffix leaks into ansible_host
@@ -317,14 +322,16 @@ def generate_ssh_config():
         ip = _get_node_ip(ultra64_data)
         if ip is None:
             ip = '0.0.0.0'  # safe fallback if network/host missing
+        user = ultra64_data.get('admin_user', 'root')
     else:
         hostname = 'ultra64'
         ip = '0.0.0.0'
+        user = 'root'
     
     ssh_config_content = f"""# Generated SSH config for orchestration
 Host {hostname}
     HostName {ip}
-    User root
+    User {user}
     IdentityFile ~/.ssh/id_ed25519
     UserKnownHostsFile /dev/null
     StrictHostKeyChecking no
