@@ -6,7 +6,8 @@ all:
       profile: router
       status: Operational
       os: Fedora 44 Server Minimal
-      ip: 10.64.0.1
+      network: 64
+      host: 1
       hw:
         cpu: AMD RX-427BB Quad-Core APU
         ram: 8GB (2x4GB) DDR3 SODIMM 1600 MT/s
@@ -47,26 +48,33 @@ all:
             factory_mac: 00:24:81:81:e0:e4
           lan:
             name: enp1s0f1
-      network:
+      network_config:
         wan:
           mac: 24:2F:D0:D1:2E:31
         lan:
-          ip: 10.64.0.1/24
+          network: 64
+          host: 1
           domain: rsk.al
       host_services:
         dhcp:
           security_profile: hardened
-          subnet: 10.64.0.0/24
+          network: 64
           range_start: 10.64.0.100
           range_end: 10.64.0.200
-          dns_server: 10.64.0.1
+          dns_host: 1
           static_leases:
           - hostname: nitro
-            ip: 10.64.0.3
+            network: 64
+            host: 3
             mac: 24:2F:D0:D1:2E:30
+            ip: 10.64.0.3
           - hostname: nx
-            ip: 10.64.0.2
+            network: 64
+            host: 2
             mac: 88:76:B9:8F:30:E0
+            ip: 10.64.0.2
+          subnet: 10.64.0.0/24
+          dns_server: 10.64.0.1
         vpn:
           security_profile: strict
           port: 51820
@@ -74,9 +82,14 @@ all:
           host_id: 1
           peers:
           - name: gcp-aider
-            pubkey: TPc/hcMYdohDuuD9pkadydtGnUlOTf1q2e4lSYf8e04=
+            pubkey: TPc/hcMYdohDuuD9pkadydtGnUlOTf1q2e4lSYf8e04==
             host_id: 5
+            extra_networks:
+            - network: 64
+              host: 5
             route_lan: true
+            extra_ips:
+            - 10.64.0.5/24
       packages:
       - conntrack-tools
       - ethtool
@@ -97,7 +110,10 @@ all:
       host_keys:
         ssh-ed25519: AAAAC3NzaC1lZDI1NTE5AAAAIExample_ED25519_HOST_KEY_ultra64
         ssh-rsa: AAAAB3NzaC1yc2EAAAADAQABAAABgQExample_RSA_HOST_KEY_ultra64
+      ip: 10.64.0.1
       ansible_host: 10.64.0.1
+      network_cidr: 10.64.0.0/24
+      network_gateway: 10.64.0.1
   vars:
     global_identities:
     - username: root
@@ -113,6 +129,9 @@ all:
       - name: root@gamecube
         key: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIP7NWiRVdLEnGuc4hOMUVbDPT0oM2VM3oSA335EF4WbS
           gamecube
+      - name: raskal@aider-node
+        key: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBzccYlHTg5Qj5QgF13+C+Lc0XqpfA8A/v425nrYz60w
+          labs@raskal.io
     headscale:
       mesh_subnet: 100.64.0.0/24
       mesh_gateway_ip: 10.64.0.4
@@ -151,7 +170,9 @@ all:
       home: /home/raskal
       state: present
     packages:
+    - avahi
     - bind-utils
+    - caddy
     - conntrack-tools
     - curl
     - ethtool
@@ -185,7 +206,48 @@ all:
     - 1.fedora.pool.ntp.org
     - 2.fedora.pool.ntp.org
     - 3.fedora.pool.ntp.org
+    networks:
+      vlan-32:
+        id: vlan-32
+        network: 32
+        cidr: 10.32.0.0/24
+        gateway: 10.32.0.1
+        subnet_mask: 255.255.255.0
+        broadcast: 10.32.0.255
+        network_address: 10.32.0.0
     services:
+      caddy:
+        id: caddy
+        security_profile: hardened
+        packages:
+        - caddy
+        services:
+        - name: apex
+          domain: raskal.io
+          backend_node: TBD
+          backend_port: 80
+          auth_mode: native_oidc
+        - name: proxmox_main
+          domain: gamecube.rsk.al
+          backend_network: 64
+          backend_host: 4
+          backend_port: 8006
+          auth_mode: internal_only
+          backend: 10.64.0.4:8006
+        - name: proxmox_alias
+          domain: gcn.rsk.al
+          backend_network: 64
+          backend_host: 4
+          backend_port: 8006
+          auth_mode: internal_only
+          backend: 10.64.0.4:8006
+        - name: proxmox_public
+          domain: gamecube.raskal.io
+          backend_network: 64
+          backend_host: 4
+          backend_port: 8006
+          auth_mode: native_oidc
+          backend: 10.64.0.4:8006
       firewall:
         id: firewall
         security_profile: strict
@@ -208,6 +270,14 @@ all:
         templates:
         - source: kea-dhcp4.conf.j2
           destination: /etc/kea/kea-dhcp4.conf
+      avahi:
+        id: avahi
+        security_profile: baseline
+        packages:
+        - avahi
+        templates:
+        - source: avahi-daemon.conf.j2
+          destination: /etc/avahi/avahi-daemon.conf
       vpn:
         id: vpn
         security_profile: strict
