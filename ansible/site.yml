@@ -1,0 +1,62 @@
+---
+- name: Provision Infrastructure Nodes
+  hosts: all
+  become: true
+  
+  vars:
+    min_ansible_version: "2.14.0"
+    
+  tasks:
+    - name: Ensure Ansible version requirement
+      ansible.builtin.assert:
+        that:
+          - ansible_version.full is version(min_ansible_version, '>=')
+
+    - name: Log playbook execution start to system journal
+      ansible.builtin.command: logger -t ansible-infra -p syslog.info "Starting infrastructure playbook run."
+      changed_when: false
+
+    - name: Apply Universal Foundation
+      ansible.builtin.import_role:
+        name: base
+
+    - name: Apply Time Synchronization
+      ansible.builtin.import_role:
+        name: chrony
+
+    - name: Apply Router Roles
+      block:
+        - ansible.builtin.import_role:
+            name: network
+        - ansible.builtin.import_role:
+            name: firewall
+        - ansible.builtin.import_role:
+            name: dhcp
+        - ansible.builtin.import_role:
+            name: vpn
+        - ansible.builtin.import_role:
+            name: avahi
+      when: profile is defined and profile == 'router'
+
+  handlers:
+    - name: Apply sysctl configuration
+      ansible.builtin.command: sysctl --system
+    - name: Reload systemd daemon
+      ansible.builtin.systemd:
+        daemon_reload: true
+    - name: Regenerate GRUB config
+      ansible.builtin.command: grub2-mkconfig -o /boot/grub2/grub.cfg
+    - name: Reload udev rules
+      ansible.builtin.command:
+        argv:
+          - /bin/sh
+          - -c
+          - udevadm control --reload-rules && udevadm trigger
+    - name: Restart nftables
+      ansible.builtin.systemd:
+        name: nftables
+        state: restarted
+    - name: Restart kea-dhcp4
+      ansible.builtin.systemd:
+        name: kea-dhcp4
+        state: restarted

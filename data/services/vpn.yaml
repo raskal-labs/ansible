@@ -1,0 +1,10 @@
+---
+id: vpn
+security_profile: strict
+prefix: 100.64.1
+cidr: 100.64.1.0/24
+packages:
+  - wireguard-tools
+templates:
+  - source: wg0.conf.j2
+    destination: /etc/wireguard/wg0.conf

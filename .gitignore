@@ -1,0 +1,7 @@
+.venv/
+.aider*
+.env
+ansible_core/.venv/
+./generated
+.vault_pass
+.aider*

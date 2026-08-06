@@ -1,6 +1,8 @@
 [Match]
-Name={{ hardware.interfaces.lan.name }}
+Name={{ interfaces.lan.dev }}
+
+[Address]
+Address={{ ip }}/24
 
 [Network]
-Address={{ network.lan.ip }}
-IPForward=yes
+DHCPServer=yes

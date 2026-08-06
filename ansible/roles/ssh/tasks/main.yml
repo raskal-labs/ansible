@@ -1,0 +1,35 @@
+---
+# SSH Role - Deploy authorized keys and private keys
+
+- name: Ensure .ssh directory exists for root
+  ansible.builtin.file:
+    path: /root/.ssh
+    state: directory
+    mode: '0700'
+    owner: root
+    group: root
+  tags:
+    - ssh
+
+- name: Deploy authorized keys for system accounts
+  ansible.posix.authorized_key:
+    user: "{{ item.0.username }}"
+    key: "{{ item.1.key }}"
+    comment: "{{ item.1.name }}"
+    state: present
+  loop: "{{ global_identities | subelements('authorized_clients', skip_missing=True) }}"
+  tags:
+    - ssh
+    - authorized_keys
+
+- name: Deploy ultra64 private key to root
+  ansible.builtin.copy:
+    content: "{{ vault_ultra64_private_key }}"
+    dest: /root/.ssh/id_ed25519
+    mode: '0600'
+    owner: root
+    group: root
+  no_log: true
+  tags:
+    - ssh
+    - private_key

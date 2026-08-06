@@ -3,7 +3,8 @@ identity:
 profile: router
 status: Operational
 os: Fedora 44 Server Minimal
-ip: 10.64.0.1
+network: 64
+host: 1
 hw:
   cpu: AMD RX-427BB Quad-Core APU
   ram: 8GB (2x4GB) DDR3 SODIMM 1600 MT/s
@@ -24,45 +25,48 @@ hw:
   - 4 x DisplayPort 1.2
   - 4 x USB 3.0 / 4 x USB 2.0
   - 1 x Serial / 1 x Parallel
-net:
-  wan:
-    dev: enp1s0f0
-    mac: 00:24:81:81:e0:e4
-    spoof: 24:2F:D0:D1:2E:31
-  lan:
-    dev: enp1s0f1
-    mac: 00:24:81:81:e0:e5
+
 opts:
   grub_timeout: 1
   kernel_args:
   - panic=10
-iface_wan_spoofed_mac: 24:2F:D0:D1:2E:31
-hardware:
-  interfaces:
-    wan:
-      name: enp1s0f0
-      factory_mac: 00:24:81:81:e0:e4
-    lan:
-      name: enp1s0f1
-network:
+
+interfaces:
   wan:
-    mac: 24:2F:D0:D1:2E:31
+    dev: enp1s0f0
+    mac: "24:2F:D0:D1:2E:31"
   lan:
-    ip: 10.64.0.1/24
-    domain: rsk.al
+    dev: enp1s0f1
+
 host_services:
   dhcp:
-    subnet: 10.64.0.0/24
-    range_start: 10.64.0.100
-    range_end: 10.64.0.200
-    dns_server: 10.64.0.1
+    security_profile: hardened
+    network: 64
+    range_start: 100
+    range_end: 200
+    dns_host: 1
     static_leases:
     - hostname: nitro
-      ip: 10.64.0.3
+      network: 64
+      host: 3
       mac: 24:2F:D0:D1:2E:30
     - hostname: nx
-      ip: 10.64.0.2
+      network: 64
+      host: 2
       mac: 88:76:B9:8F:30:E0
+  vpn:
+    security_profile: strict
+    port: 51820
+    privkey: "{{ vault_wg_ultra64_private_key }}"
+    host_id: 1
+    peers:
+      - name: gcp-aider
+        pubkey: "TPc/hcMYdohDuuD9pkadydtGnUlOTf1q2e4lSYf8e04=="
+        host_id: 5
+        extra_networks:
+          - network: 64
+            host: 5
+        route_lan: true
 
 packages:
   - conntrack-tools
@@ -74,8 +78,15 @@ packages:
   - nmap
   - socat
   - tcpdump
+  - wireguard-tools
 
 packages_absent:
   - firewalld
   - netbird
   - systemd-resolved
+  - unbound
+  - dnscrypt-proxy
+
+host_keys:
+  ssh-ed25519: "AAAAC3NzaC1lZDI1NTE5AAAAIExample_ED25519_HOST_KEY_ultra64"
+  ssh-rsa: "AAAAB3NzaC1yc2EAAAADAQABAAABgQExample_RSA_HOST_KEY_ultra64"
