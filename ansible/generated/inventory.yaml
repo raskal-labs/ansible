@@ -1,0 +1,271 @@
+all:
+  hosts:
+    ultra64:
+      identity:
+        hostname: ultra64
+      profile: router
+      status: Operational
+      os: Fedora 44 Server Minimal
+      network: 64
+      host: 1
+      hw:
+        cpu: AMD RX-427BB Quad-Core APU
+        ram: 8GB (2x4GB) DDR3 SODIMM 1600 MT/s
+        gpu: Integrated AMD Radeon R7
+        storage:
+        - dev: M.2 Slot (Primary)
+          type: 64GB M.2 2280 SATA SSD
+          fs: ext4
+          mounts:
+          - /boot/efi (976M)
+          - / (54.7G)
+          - '[SWAP] (3G)'
+        slots:
+        - 'Low-profile PCIe 2.0 x8 (In Use: Intel 82571EB Dual-Port GbE)'
+        ports:
+        - 1 x GbE (Realtek)
+        - 2 x GbE (Intel)
+        - 4 x DisplayPort 1.2
+        - 4 x USB 3.0 / 4 x USB 2.0
+        - 1 x Serial / 1 x Parallel
+      opts:
+        grub_timeout: 1
+        kernel_args:
+        - panic=10
+      interfaces:
+        wan:
+          dev: enp1s0f0
+          mac: 24:2F:D0:D1:2E:31
+        lan:
+          dev: enp1s0f1
+      host_services:
+        dhcp:
+          security_profile: hardened
+          network: 64
+          range_start: 10.64.0.100
+          range_end: 10.64.0.200
+          dns_host: 1
+          static_leases:
+          - hostname: nitro
+            network: 64
+            host: 3
+            mac: 24:2F:D0:D1:2E:30
+            ip: 10.64.0.3
+          - hostname: nx
+            network: 64
+            host: 2
+            mac: 88:76:B9:8F:30:E0
+            ip: 10.64.0.2
+          subnet: 10.64.0.0/24
+          dns_server: 10.64.0.1
+        vpn:
+          security_profile: strict
+          port: 51820
+          privkey: '{{ vault_wg_ultra64_private_key }}'
+          host_id: 1
+          peers:
+          - name: gcp-aider
+            pubkey: TPc/hcMYdohDuuD9pkadydtGnUlOTf1q2e4lSYf8e04==
+            host_id: 5
+            extra_networks:
+            - network: 64
+              host: 5
+            route_lan: true
+            extra_ips:
+            - 10.64.0.5/24
+      packages:
+      - conntrack-tools
+      - ethtool
+      - iftop
+      - iperf3
+      - net-tools
+      - nload
+      - nmap
+      - socat
+      - tcpdump
+      - wireguard-tools
+      packages_absent:
+      - firewalld
+      - netbird
+      - systemd-resolved
+      - unbound
+      - dnscrypt-proxy
+      host_keys:
+        ssh-ed25519: AAAAC3NzaC1lZDI1NTE5AAAAIExample_ED25519_HOST_KEY_ultra64
+        ssh-rsa: AAAAB3NzaC1yc2EAAAADAQABAAABgQExample_RSA_HOST_KEY_ultra64
+      ansible_user: root
+      ansible_become: false
+      ip: 10.64.0.1
+      ansible_host: 10.64.0.1
+      network_cidr: 10.64.0.0/24
+      network_gateway: 10.64.0.1
+  vars:
+    global_identities:
+    - username: root
+      shell: /bin/bash
+      state: present
+      authorized_clients:
+      - name: gameboy
+        key: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGCBAHN8wfMIQB53WMvtuwwIef5+6xx6dnWz3ojK3ZHJ
+          gameboy
+      - name: minty@freshbox
+        key: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMZTtS3fiWvIMQzpZk//k6LJ+FKVaQA7NpHc7bBAj0pC
+          minty
+      - name: root@gamecube
+        key: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIP7NWiRVdLEnGuc4hOMUVbDPT0oM2VM3oSA335EF4WbS
+          gamecube
+      - name: raskal@aider-node
+        key: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBzccYlHTg5Qj5QgF13+C+Lc0XqpfA8A/v425nrYz60w
+          labs@raskal.io
+    headscale:
+      mesh_subnet: 100.64.0.0/24
+      mesh_gateway_ip: 10.64.0.4
+    repo: '{{ playbook_dir | dirname }}'
+    paths:
+      etc: /etc
+      tasks: '{{ repo }}/ansible/tasks'
+      templates: '{{ repo }}/ansible/templates'
+    pipeline:
+      inventory: '{{ repo }}/ansible/inventory/transform.py'
+      playbook_pattern: '{{ repo }}/ansible/{action}-{host}.yml'
+    domains:
+      local: rsk.al
+      public: raskal.io
+    tz: America/Vancouver
+    users:
+    - name: root
+      role: Root
+      home: /root
+      state: present
+    - name: raskal
+      role: Admin
+      email: labs@raskal.io
+      home: /home/raskal
+      state: present
+    packages:
+    - avahi
+    - bind-utils
+    - caddy
+    - conntrack-tools
+    - curl
+    - ethtool
+    - git
+    - htop
+    - iftop
+    - ipcalc
+    - iperf3
+    - kea
+    - mtr
+    - nano
+    - net-tools
+    - nftables
+    - nload
+    - nmap
+    - socat
+    - tcpdump
+    - tmux
+    - traceroute
+    - tree
+    - wget
+    - wireguard-tools
+    packages_absent:
+    - dnscrypt-proxy
+    - firewalld
+    - netbird
+    - systemd-resolved
+    - unbound
+    ntp_servers:
+    - 0.fedora.pool.ntp.org
+    - 1.fedora.pool.ntp.org
+    - 2.fedora.pool.ntp.org
+    - 3.fedora.pool.ntp.org
+    networks:
+      vlan-64:
+        id: vlan-64
+        network: 64
+        cidr: 10.64.0.0/24
+        gateway: 10.64.0.1
+        subnet_mask: 255.255.255.0
+        broadcast: 10.64.0.255
+        network_address: 10.64.0.0
+      vlan-32:
+        id: vlan-32
+        network: 32
+        cidr: 10.32.0.0/24
+        gateway: 10.32.0.1
+        subnet_mask: 255.255.255.0
+        broadcast: 10.32.0.255
+        network_address: 10.32.0.0
+    infra_services:
+      caddy:
+        id: caddy
+        security_profile: hardened
+        packages:
+        - caddy
+        services:
+        - name: apex
+          domain: raskal.io
+          backend_node: TBD
+          backend_port: 80
+          auth_mode: native_oidc
+        - name: proxmox_main
+          domain: gamecube.rsk.al
+          backend_network: 64
+          backend_host: 4
+          backend_port: 8006
+          auth_mode: internal_only
+          backend: 10.64.0.4:8006
+        - name: proxmox_alias
+          domain: gcn.rsk.al
+          backend_network: 64
+          backend_host: 4
+          backend_port: 8006
+          auth_mode: internal_only
+          backend: 10.64.0.4:8006
+        - name: proxmox_public
+          domain: gamecube.raskal.io
+          backend_network: 64
+          backend_host: 4
+          backend_port: 8006
+          auth_mode: native_oidc
+          backend: 10.64.0.4:8006
+      firewall:
+        id: firewall
+        security_profile: strict
+        packages:
+        - nftables
+        templates:
+        - source: nftables.conf.j2
+          destination: /etc/nftables.conf
+      headscale:
+        id: headscale
+        security_profile: hardened
+        mesh_subnet: 100.64.0.0/24
+        mesh_gateway_ip: 10.64.0.4
+        description: Headscale VPN mesh coordination service
+      dhcp:
+        id: dhcp
+        security_profile: hardened
+        packages:
+        - kea
+        templates:
+        - source: kea-dhcp4.conf.j2
+          destination: /etc/kea/kea-dhcp4.conf
+      avahi:
+        id: avahi
+        security_profile: baseline
+        packages:
+        - avahi
+        templates:
+        - source: avahi-daemon.conf.j2
+          destination: /etc/avahi/avahi-daemon.conf
+      vpn:
+        id: vpn
+        security_profile: strict
+        prefix: 100.64.1
+        cidr: 100.64.1.0/24
+        packages:
+        - wireguard-tools
+        templates:
+        - source: wg0.conf.j2
+          destination: /etc/wireguard/wg0.conf

@@ -1,0 +1,44 @@
+---
+# Security Profile Definitions for Policy-Based Intent Model
+# Maps conceptual security postures to systemd implementation details
+
+security_profiles:
+  baseline:
+    description: "Minimal security hardening for non-critical services"
+    systemd_overrides:
+      PrivateTmp: "yes"
+      ProtectKernelTunables: "yes"
+      
+  hardened:
+    description: "Standard security hardening for most services"
+    systemd_overrides:
+      PrivateTmp: "yes"
+      PrivateDevices: "yes"
+      ProtectSystem: "strict"
+      ProtectHome: "yes"
+      ProtectKernelTunables: "yes"
+      ProtectKernelModules: "yes"
+      ProtectControlGroups: "yes"
+      NoNewPrivileges: "yes"
+      
+  strict:
+    description: "Maximum security hardening for critical infrastructure services"
+    systemd_overrides:
+      PrivateTmp: "yes"
+      PrivateDevices: "yes"
+      PrivateNetwork: "no"  # Most services need network access
+      ProtectSystem: "strict"
+      ProtectHome: "yes"
+      ProtectKernelTunables: "yes"
+      ProtectKernelModules: "yes"
+      ProtectKernelLogs: "yes"
+      ProtectControlGroups: "yes"
+      ProtectProc: "invisible"
+      ProcSubset: "pid"
+      NoNewPrivileges: "yes"
+      MemoryDenyWriteExecute: "yes"
+      RestrictRealtime: "yes"
+      RestrictSUIDSGID: "yes"
+      LockPersonality: "yes"
+      RestrictNamespaces: "yes"
+      SystemCallArchitectures: "native"

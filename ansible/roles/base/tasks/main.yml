@@ -32,13 +32,13 @@
   when: "item not in grubby_info.stdout"
 
 - name: Enforce absent packages (State Purging)
-  ansible.builtin.dnf5:
+  ansible.builtin.dnf:
     name: "{{ packages_absent }}"
     state: absent
   when: packages_absent is defined and packages_absent | length > 0
 
 - name: Install required packages (Hardened with retries)
-  ansible.builtin.dnf5:
+  ansible.builtin.dnf:
     name: "{{ packages }}"
     state: present
     update_cache: yes
@@ -47,3 +47,6 @@
   retries: 3
   delay: 5
   when: packages is defined and packages | length > 0
+
+- name: Apply universal security profiles
+  ansible.builtin.include_tasks: security.yml

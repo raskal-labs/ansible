@@ -1,0 +1,8 @@
+# Generated systemd security override for {{ service_name }}
+# Security Profile: {{ service_security_profile }}
+# {{ security_profiles[service_security_profile].description }}
+
+[Service]
+{% for key, value in security_profiles[service_security_profile].systemd_overrides.items() %}
+{{ key }}={{ value }}
+{% endfor %}

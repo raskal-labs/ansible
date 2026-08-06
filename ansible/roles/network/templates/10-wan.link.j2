@@ -1,7 +1,7 @@
 [Match]
-PermanentMACAddress={{ hardware.interfaces.wan.factory_mac }}
+OriginalName={{ interfaces.wan.dev }}
 
 [Link]
-Name={{ hardware.interfaces.wan.name }}
-MACAddress={{ network.wan.mac }}
+Name={{ interfaces.wan.dev }}
+MACAddress={{ interfaces.wan.mac }}
 NamePolicy=kernel database onboard slot path

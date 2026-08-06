@@ -1,5 +1,5 @@
 ---
-id: vlan-64
+id: vlan-32
 type: network
-network: 64
+network: 32
 gateway_host: 1
