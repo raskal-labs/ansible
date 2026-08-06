@@ -262,7 +262,7 @@ def generate_inventory():
     
     # Inject processed services data
     if processed_services:
-        inventory['all']['vars']['services'] = processed_services
+        inventory['all']['vars']['infra_services'] = processed_services
     
     # Write updated inventory
     inventory_path = os.path.join(output_dir, 'inventory.yaml')

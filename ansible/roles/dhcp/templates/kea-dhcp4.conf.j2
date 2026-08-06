@@ -1,7 +1,7 @@
 {
 "Dhcp4": {
     "interfaces-config": {
-        "interfaces": [ "{{ hardware.interfaces.lan.name }}" ]
+        "interfaces": [ "{{ interfaces.lan.dev }}" ]
     },
     "lease-database": {
         "type": "memfile",
@@ -17,7 +17,7 @@
             "option-data": [
                 {
                     "name": "routers",
-                    "data": "{{ network.lan.ip.split('/')[0] }}"
+                    "data": "{{ network_gateway }}"
                 },
                 {
                     "name": "domain-name-servers",
@@ -25,7 +25,7 @@
                 },
                 {
                     "name": "domain-name",
-                    "data": "{{ network.lan.domain }}"
+                    "data": "{{ domains.local }}"
                 }
             ],
             "reservations": [

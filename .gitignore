@@ -4,3 +4,4 @@
 ansible_core/.venv/
 ./generated
 .vault_pass
+.aider*

@@ -1,11 +1,5 @@
 ---
 id: vlan-64
 type: network
-ipv4:
-  subnet: "10.64.0.0/24"
-  gateway: "10.64.0.1"
-dhcp:
-  start: "10.64.0.100"
-  end: "10.64.0.200"
-  dns:
-    - "10.64.0.1"
+network: 64
+gateway_host: 1

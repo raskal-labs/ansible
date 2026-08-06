@@ -1,5 +1,5 @@
 # Generated SSH config for orchestration
-Host ultra64 10.64.0.1
+Host ultra64
     HostName 10.64.0.1
     User root
     IdentityFile ~/.ssh/id_ed25519

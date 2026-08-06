@@ -25,33 +25,19 @@ hw:
   - 4 x DisplayPort 1.2
   - 4 x USB 3.0 / 4 x USB 2.0
   - 1 x Serial / 1 x Parallel
-net:
-  wan:
-    dev: enp1s0f0
-    mac: 00:24:81:81:e0:e4
-    spoof: 24:2F:D0:D1:2E:31
-  lan:
-    dev: enp1s0f1
-    mac: 00:24:81:81:e0:e5
+
 opts:
   grub_timeout: 1
   kernel_args:
   - panic=10
-iface_wan_spoofed_mac: 24:2F:D0:D1:2E:31
-hardware:
-  interfaces:
-    wan:
-      name: enp1s0f0
-      factory_mac: 00:24:81:81:e0:e4
-    lan:
-      name: enp1s0f1
-network_config:
+
+interfaces:
   wan:
-    mac: 24:2F:D0:D1:2E:31
+    dev: enp1s0f0
+    mac: "24:2F:D0:D1:2E:31"
   lan:
-    network: 64
-    host: 1
-    domain: rsk.al
+    dev: enp1s0f1
+
 host_services:
   dhcp:
     security_profile: hardened
@@ -75,7 +61,7 @@ host_services:
     host_id: 1
     peers:
       - name: gcp-aider
-        pubkey: "TPc/hcMYdohDuuD9pkadydtGnUlOTf1q2e4lSYf8e04="
+        pubkey: "TPc/hcMYdohDuuD9pkadydtGnUlOTf1q2e4lSYf8e04=="
         host_id: 5
         extra_networks:
           - network: 64

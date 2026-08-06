@@ -16,19 +16,6 @@ domains:
 
 tz: "America/Vancouver"
 
-subnets:
-  lan:
-    cidr: "10.64.0.0/24"
-    gw: "10.64.0.1"
-    dhcp:
-      start: "10.64.0.100"
-      end: "10.64.0.200"
-      dns:
-        - "10.64.0.1"
-  vpn:
-    cidr: "100.64.1.0/24"
-    prefix: "100.64.1"
-
 users:
   - name: "root"
     role: "Root"

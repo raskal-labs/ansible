@@ -3,3 +3,4 @@
   ansible.builtin.systemd:
     name: wg-quick@wg0
     state: restarted
+  failed_when: ansible_check_mode

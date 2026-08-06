@@ -3,3 +3,4 @@
   ansible.builtin.systemd:
     name: avahi-daemon
     state: restarted
+  failed_when: ansible_check_mode

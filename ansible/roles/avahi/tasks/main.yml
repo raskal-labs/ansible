@@ -1,7 +1,7 @@
 ---
 - name: Install Avahi daemon
   ansible.builtin.package:
-    name: avahi-daemon
+    name: avahi
     state: present
 
 - name: Configure Avahi daemon
@@ -18,3 +18,4 @@
     name: avahi-daemon
     enabled: true
     state: started
+  ignore_errors: "{{ ansible_check_mode }}"

@@ -18,12 +18,12 @@ table inet filter {
         ct state established,related accept
         
         # Allow SSH from LAN and VPN networks
-        iifname "{{ hardware.interfaces.lan.name }}" tcp dport 22 accept
+        iifname "{{ interfaces.lan.dev }}" tcp dport 22 accept
         iifname "wg0" tcp dport 22 accept
         
         # Allow DNS and DHCP from LAN
-        iifname "{{ hardware.interfaces.lan.name }}" udp dport { 53, 67 } accept
-        iifname "{{ hardware.interfaces.lan.name }}" tcp dport 53 accept
+        iifname "{{ interfaces.lan.dev }}" udp dport { 53, 67 } accept
+        iifname "{{ interfaces.lan.dev }}" tcp dport 53 accept
         
         # Allow mDNS (port 5353) from Vault and Sandbox networks
         ip saddr { $VAULT_NET, $SANDBOX_NET } udp dport 5353 accept
@@ -32,7 +32,7 @@ table inet filter {
         ip protocol icmp accept
         
         # Allow incoming VPN handshake on WAN
-        iifname "{{ hardware.interfaces.wan.name }}" udp dport {{ host_services.vpn.port | default(51820) }} accept
+        iifname "{{ interfaces.wan.dev }}" udp dport {{ host_services.vpn.port | default(51820) }} accept
     }
 
     chain forward {
@@ -42,11 +42,11 @@ table inet filter {
         ct state established,related accept
         
         # Allow Vault network to route to WAN
-        ip saddr $VAULT_NET oifname "{{ hardware.interfaces.wan.name }}" accept
+        ip saddr $VAULT_NET oifname "{{ interfaces.wan.dev }}" accept
         
         # Allow Sandbox to route to WAN but DROP traffic to private networks
         ip saddr $SANDBOX_NET ip daddr { 10.0.0.0/8, 100.64.0.0/10 } drop
-        ip saddr $SANDBOX_NET oifname "{{ hardware.interfaces.wan.name }}" accept
+        ip saddr $SANDBOX_NET oifname "{{ interfaces.wan.dev }}" accept
         
         # Allow Headscale mesh traffic
         ip saddr $HEADSCALE_NET ip daddr $VAULT_NET accept
@@ -57,7 +57,7 @@ table inet filter {
         ip saddr $VAULT_NET ip daddr $BREAKGLASS_VPN_NET accept
         
         # Allow VPN clients (wg0) to route traffic into networks
-        iifname "wg0" oifname "{{ hardware.interfaces.lan.name }}" accept
+        iifname "wg0" oifname "{{ interfaces.lan.dev }}" accept
         
         # Allow mDNS forwarding between Vault and Sandbox
         ip saddr { $VAULT_NET, $SANDBOX_NET } ip daddr { $VAULT_NET, $SANDBOX_NET } udp dport 5353 accept
@@ -69,13 +69,13 @@ table ip nat {
         type nat hook prerouting priority dstnat; policy accept;
         
         # Forward HTTP/HTTPS traffic from WAN to Caddy reverse proxy
-        iifname "{{ hardware.interfaces.wan.name }}" tcp dport { 80, 443 } dnat to $CADDY_IP
+        iifname "{{ interfaces.wan.dev }}" tcp dport { 80, 443 } dnat to $CADDY_IP
     }
     
     chain postrouting {
         type nat hook postrouting priority srcnat; policy accept;
         
         # Masquerade (NAT) all traffic leaving the WAN port
-        oifname "{{ hardware.interfaces.wan.name }}" masquerade
+        oifname "{{ interfaces.wan.dev }}" masquerade
     }
 }
