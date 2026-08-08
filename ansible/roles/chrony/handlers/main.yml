@@ -3,4 +3,4 @@
   ansible.builtin.systemd:
     name: chronyd
     state: restarted
-  failed_when: ansible_check_mode
+  when: not ansible_check_mode

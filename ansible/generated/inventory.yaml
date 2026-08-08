@@ -88,7 +88,6 @@ all:
       - firewalld
       - netbird
       - systemd-resolved
-      - unbound
       - dnscrypt-proxy
       host_keys:
         ssh-ed25519: AAAAC3NzaC1lZDI1NTE5AAAAIExample_ED25519_HOST_KEY_ultra64
@@ -145,6 +144,7 @@ all:
     packages:
     - avahi
     - bind-utils
+    - blocky
     - caddy
     - conntrack-tools
     - curl
@@ -166,6 +166,7 @@ all:
     - tmux
     - traceroute
     - tree
+    - unbound
     - wget
     - wireguard-tools
     packages_absent:
@@ -173,7 +174,6 @@ all:
     - firewalld
     - netbird
     - systemd-resolved
-    - unbound
     ntp_servers:
     - 0.fedora.pool.ntp.org
     - 1.fedora.pool.ntp.org
@@ -243,6 +243,39 @@ all:
         mesh_subnet: 100.64.0.0/24
         mesh_gateway_ip: 10.64.0.4
         description: Headscale VPN mesh coordination service
+      dns:
+        id: dns
+        packages:
+        - unbound
+        - blocky
+        blocklists:
+        - https://adguardteam.github.io/HostlistsRegistry/assets/filter_1.txt
+        - https://adguardteam.github.io/HostlistsRegistry/assets/filter_2.txt
+        - https://raw.githubusercontent.com/DandelionSprout/adfilt/master/GameConsoleAdblockList.txt
+        - https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/tif.txt
+        - https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/pro.txt
+        custom_dns:
+          u64.rsk.al: 10.64.0.1
+          nx.rsk.al: 10.64.0.2
+          nitro.rsk.al: 10.64.0.3
+          dol.rsk.al: 10.64.0.4
+          ca.rsk.al: 10.64.0.1
+          '*.rsk.al': 10.64.0.202
+          dns.rsk.al: 10.64.0.202
+          e-reader.rsk.al: 10.64.0.202
+          ha.rsk.al: 10.64.0.202
+          haos.rsk.al: 10.64.0.202
+          map.rsk.al: 10.64.0.202
+          auth.rsk.al: 10.64.0.202
+          ldap.rsk.al: 10.64.0.202
+        caching:
+          min_ttl: 60
+          max_ttl: 86400
+        templates:
+        - source: unbound.conf.j2
+          destination: /etc/unbound/unbound.conf
+        - source: blocky.yml.j2
+          destination: /etc/blocky/blocky.yml
       dhcp:
         id: dhcp
         security_profile: hardened

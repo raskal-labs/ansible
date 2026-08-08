@@ -1,0 +1,16 @@
+---
+- name: Reload systemd daemon
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Restart blocky
+  ansible.builtin.systemd:
+    name: blocky
+    state: restarted
+  failed_when: ansible_check_mode
+
+- name: Restart unbound
+  ansible.builtin.systemd:
+    name: unbound
+    state: restarted
+  failed_when: ansible_check_mode

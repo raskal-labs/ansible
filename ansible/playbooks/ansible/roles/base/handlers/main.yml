@@ -1,0 +1,7 @@
+---
+- name: Reload systemd daemon
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Regenerate GRUB config
+  ansible.builtin.command: grub2-mkconfig -o /boot/grub2/grub.cfg
