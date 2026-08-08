@@ -24,3 +24,72 @@
     name: step-ca
     state: started
     enabled: yes
+
+- name: Ensure step-ca certificate directory exists
+  ansible.builtin.file:
+    path: /etc/step-ca/certs
+    state: directory
+    owner: step
+    group: step
+    mode: '0700'
+
+- name: Ensure step-ca secrets directory exists
+  ansible.builtin.file:
+    path: /etc/step-ca/secrets
+    state: directory
+    owner: step
+    group: step
+    mode: '0700'
+
+- name: Ensure step-ca db directory exists
+  ansible.builtin.file:
+    path: /var/lib/step-ca/db
+    state: directory
+    owner: step
+    group: step
+    mode: '0700'
+
+- name: Deploy root_ca.crt from vault
+  ansible.builtin.copy:
+    content: "{{ vault_step_ca_root_crt }}"
+    dest: "/etc/step-ca/certs/root_ca.crt"
+    owner: step
+    group: step
+    mode: '0644'
+  no_log: true
+
+- name: Deploy intermediate_ca.crt from vault
+  ansible.builtin.copy:
+    content: "{{ vault_step_ca_intermediate_crt }}"
+    dest: "/etc/step-ca/certs/intermediate_ca.crt"
+    owner: step
+    group: step
+    mode: '0644'
+  no_log: true
+
+- name: Deploy root_ca_key from vault
+  ansible.builtin.copy:
+    content: "{{ vault_step_ca_root_key }}"
+    dest: "/etc/step-ca/secrets/root_ca_key"
+    owner: step
+    group: step
+    mode: '0600'
+  no_log: true
+
+- name: Deploy intermediate_ca_key from vault
+  ansible.builtin.copy:
+    content: "{{ vault_step_ca_intermediate_key }}"
+    dest: "/etc/step-ca/secrets/intermediate_ca_key"
+    owner: step
+    group: step
+    mode: '0600'
+  no_log: true
+
+- name: Deploy CA password from vault
+  ansible.builtin.copy:
+    content: "{{ vault_step_ca_password }}"
+    dest: "/etc/step-ca/secrets/password"
+    owner: step
+    group: step
+    mode: '0600'
+  no_log: true

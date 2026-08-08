@@ -3,34 +3,140 @@ id: caddy
 security_profile: hardened
 packages:
   - caddy
+email: labs@raskal.io
+tls_profiles:
+  sovereign_tls:
+    type: acme
+    endpoint: https://ca.rsk.al:9000/acme/acme/directory
+    trusted_roots: /etc/step-ca/certs/root_ca.crt
+auth_profiles:
+  auth_gate:
+    backend_network: 64
+    backend_host: 203
+    backend_port: 9091
+    uri: /api/authz/forward-auth?authelia_url=https://auth.rsk.al/
+  auth_gate_public:
+    backend_network: 64
+    backend_host: 203
+    backend_port: 9091
+    uri: /api/authz/forward-auth?authelia_url=https://auth.raskal.io/
 services:
-  # The Apex placeholder (update the node reference when ready)
-  - name: apex
-    domain: "raskal.io"
-    backend_node: "TBD"
+  # WAN Services (raskal.io)
+  - name: homeassistant_wan
+    domains: ["haos.raskal.io", "ha.raskal.io"]
+    backend_network: 64
+    backend_host: 233
+    backend_port: 8123
+  - name: dawarich_wan
+    domains: ["map.raskal.io"]
+    backend_network: 64
+    backend_host: 204
+    backend_port: 3000
+  - name: copyparty_wan
+    domains: ["pc.raskal.io"]
+    auth: auth_gate_public
+    backend_network: 64
+    backend_host: 237
+    backend_port: 3923
+  - name: proxmox_wan
+    domains: ["gcn.raskal.io", "gamecube.raskal.io"]
+    backend_network: 64
+    backend_host: 4
+    backend_port: 8006
+    tls_insecure_skip_verify: true
+  - name: dns_wan
+    domains: ["dns.raskal.io"]
+    action: doh_public
+    backend_network: 64
+    backend_host: 1
+    backend_port: 4000
+  - name: headscale_wan
+    domains: ["wfc.raskal.io"]
+    action: headscale
+    backend: 127.0.0.1:8080
+  - name: auth_wan
+    domains: ["auth.raskal.io"]
+    backend_network: 64
+    backend_host: 203
+    backend_port: 9091
+  - name: pairdrop_wan
+    domains: ["zapper.raskal.io"]
+    backend_network: 64
+    backend_host: 232
+    backend_port: 3000
+
+  # LAN Services (rsk.al)
+  - name: auth_lan
+    domains: ["auth.rsk.al"]
+    tls: sovereign_tls
+    backend_network: 64
+    backend_host: 203
+    backend_port: 9091
+  - name: ldap_lan
+    domains: ["ldap.rsk.al"]
+    tls: sovereign_tls
+    backend_network: 64
+    backend_host: 203
+    backend_port: 17170
+  - name: dns_lan
+    domains: ["dns.rsk.al"]
+    tls: sovereign_tls
+    action: doh_internal
+    backend_network: 64
+    backend_host: 1
+    backend_port: 4000
+  - name: homeassistant_lan
+    domains: ["ha.rsk.al", "haos.rsk.al"]
+    tls: sovereign_tls
+    backend_network: 64
+    backend_host: 233
+    backend_port: 8123
+  - name: proxmox_lan
+    domains: ["pve.rsk.al", "gcn.rsk.al", "gamecube.rsk.al"]
+    tls: sovereign_tls
+    backend_network: 64
+    backend_host: 4
+    backend_port: 8006
+    tls_insecure_skip_verify: true
+  - name: dawarich_lan
+    domains: ["map.rsk.al"]
+    tls: sovereign_tls
+    action: redir
+    redir_target: "https://map.raskal.io{uri}"
+  - name: copyparty_lan
+    domains: ["pc.rsk.al"]
+    tls: sovereign_tls
+    auth: auth_gate
+    backend_network: 64
+    backend_host: 237
+    backend_port: 3923
+  - name: pairdrop_lan
+    domains: ["zapper.rsk.al"]
+    tls: sovereign_tls
+    backend_network: 64
+    backend_host: 232
+    backend_port: 3000
+  - name: nitro
+    domains: ["ntr.rsk.al"]
+    tls: sovereign_tls
+    backend_network: 64
+    backend_host: 3
     backend_port: 80
-    auth_mode: "native_oidc"
-
-  # Internal Proxmox Route 1
-  - name: proxmox_main
-    domain: "gamecube.rsk.al"
+  - name: ultra64
+    domains: ["u64.rsk.al"]
+    tls: sovereign_tls
+    action: respond
+    response_msg: "[REDACTED]-labs"
+    response_code: 200
+  - name: nx
+    domains: ["nx.rsk.al"]
+    tls: sovereign_tls
+    backend_network: 64
+    backend_host: 2
+    backend_port: 80
+  - name: dolphin
+    domains: ["dol.rsk.al"]
+    tls: sovereign_tls
     backend_network: 64
     backend_host: 4
-    backend_port: 8006
-    auth_mode: "internal_only"
-
-  # Internal Proxmox Route 2 (Alias)
-  - name: proxmox_alias
-    domain: "gcn.rsk.al"
-    backend_network: 64
-    backend_host: 4
-    backend_port: 8006
-    auth_mode: "internal_only"
-
-  # Public Proxmox Route
-  - name: proxmox_public
-    domain: "gamecube.raskal.io"
-    backend_network: 64
-    backend_host: 4
-    backend_port: 8006
-    auth_mode: "native_oidc"
+    backend_port: 80
