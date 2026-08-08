@@ -1,0 +1,19 @@
+upstream:
+  default:
+    - 127.0.0.1:5335
+
+blocklist:
+  sources:
+{% for url in infra_services.dns.blocklists %}
+    - {{ url }}
+{% endfor %}
+
+customDNS:
+  mapping:
+{% for host, ip in infra_services.dns.custom_dns.items() %}
+    {{ host }}: {{ ip }}
+{% endfor %}
+
+caching:
+  minTime: {{ infra_services.dns.caching.min_ttl }}s
+  maxTime: {{ infra_services.dns.caching.max_ttl }}s
