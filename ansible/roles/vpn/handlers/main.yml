@@ -3,4 +3,5 @@
   ansible.builtin.systemd:
     name: wg-quick@wg0
     state: restarted
-  when: not ansible_check_mode
+    enabled: true
+  when: not (dry_run | bool)

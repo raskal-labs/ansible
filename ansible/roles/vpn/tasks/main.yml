@@ -1,5 +1,10 @@
 ---
-- name: Ensure /etc/wireguard directory exists
+- name: Install WireGuard tools
+  ansible.builtin.package:
+    name: wireguard-tools
+    state: present
+
+- name: Create WireGuard config directory
   ansible.builtin.file:
     path: /etc/wireguard
     state: directory
@@ -7,7 +12,7 @@
     group: root
     mode: '0700'
 
-- name: Deploy wg0 configuration
+- name: Deploy WireGuard interface config
   ansible.builtin.template:
     src: wg0.conf.j2
     dest: /etc/wireguard/wg0.conf
@@ -16,8 +21,8 @@
     mode: '0600'
   notify: Restart wg-quick@wg0
 
-- name: Ensure VPN service is enabled and started
+- name: Enable and start WireGuard interface
   ansible.builtin.systemd:
     name: wg-quick@wg0
-    enabled: true
     state: started
+    enabled: true

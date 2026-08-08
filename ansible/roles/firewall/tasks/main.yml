@@ -1,13 +1,21 @@
 ---
-- name: Deploy nftables firewall rules
+- name: Install nftables
+  ansible.builtin.package:
+    name: nftables
+    state: present
+
+- name: Deploy nftables ruleset
   ansible.builtin.template:
-    src: "nftables.conf.j2"
-    dest: /etc/sysconfig/nftables.conf
-    mode: '0600'
+    src: nftables.conf.j2
+    dest: /etc/nftables.conf
+    owner: root
+    group: root
+    mode: '0640'
+    validate: nft -c -f %s
   notify: Restart nftables
 
-- name: Ensure nftables service is enabled and started
+- name: Enable and start nftables service
   ansible.builtin.systemd:
     name: nftables
-    enabled: true
     state: started
+    enabled: true
