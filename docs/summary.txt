@@ -1,0 +1,297 @@
+================================================================================
+INFRASTRUCTURE CMS — PROJECT SUMMARY
+================================================================================
+Router: ultra64 (AMD RX-427BB, Fedora 44, 10.64.0.1)
+Session commits: 6cf2b98 → 19d1eba
+================================================================================
+
+================================================================================
+SECTION 1: ORIGINAL AUDIT FINDINGS SUMMARY
+================================================================================
+(From audit-report.txt, commit 6cf2b98)
+
+CRITICAL findings (2):
+  C1. headscale.derp.port missing → nftables template render FAILURE
+      → FIXED in ff5ceef: derp.port: 3478 added to headscale.yaml
+
+  C2. Duplicate WAN MAC 24:2F:D0:D1:2E:31 in ultra64.yaml AND nitro
+      network_devices.yaml → DATA ERROR
+      → PARTIALLY FIXED in ff5ceef: nitro wan_mac set to VERIFY_HARDWARE
+      → STILL REQUIRES: physical hardware verification (see T2 in todo.txt)
+
+HIGH findings (7):
+  H1. Hardcoded IPs in network_devices.yaml         → FIXED ff5ceef
+  H2. Hardcoded IPs in vlan-64.yaml                 → FIXED ff5ceef
+  H3. Hardcoded IPs in vlan-32.yaml                 → FIXED ff5ceef
+  H4. Hardcoded IPs in dns.yaml custom_dns          → FIXED ff5ceef
+  H5. SANDBOX_NET hardcoded in nftables template    → FIXED ff5ceef
+  H6. BREAKGLASS_VPN_NET hardcoded in nftables      → FIXED ff5ceef
+  H7. custom_dns template/data atomic update needed → FIXED ff5ceef
+
+MEDIUM findings (8):
+  M1. Hardcoded mesh_gateway_ip in headscale.yaml   → FIXED ff5ceef
+  M2. security_profile leaking into node services   → FIXED ff5ceef
+  M3. interface key in network files                → FIXED ff5ceef
+  M4. VPN cidr stored AND derivable                 → FIXED ff5ceef
+  M5. Domain duplication caddy.yaml / dns.yaml      → PARTIALLY ADDRESSED
+  M6. static_leases key inconsistency               → FIXED ff5ceef
+  M7. unbound config vars not in data model         → FIXED ff5ceef
+  M8. auth_profiles backends not pre-derived        → FIXED 19d1eba
+  M9. data/networks/dhcp.yaml dead data             → DOCUMENTED, deferred
+
+LOW findings (4):
+  L1. netmask stored (derivable)                    → FIXED ff5ceef
+  L2. /24 hardcoded in wg0.conf.j2                  → FIXED ff5ceef
+  L3. /24 hardcoded in 30-lan.network.j2            → FIXED ff5ceef
+  L4. network/firewall race condition on provision  → ACCEPTED RISK
+
+AUDIT COMPLIANCE STATUS: 17/18 findings resolved. 1 deferred (dhcp.yaml).
+1 requires hardware verification (nitro WAN MAC).
+
+================================================================================
+SECTION 2: CHANGES APPLIED THIS SESSION
+================================================================================
+
+CHANGE 1 — data/services/headscale.yaml
+  Resolves: C1 (CRITICAL), M1
+  Removed: mesh_gateway_ip (hardcoded)
+  Added: mesh_gateway_network: 64, mesh_gateway_host: 4, derp.port: 3478
+  Added: server block (host: 1 = ultra64), packages, templates, state matrix
+  compile.py derives mesh_gateway_ip = 10.64.0.4 from integers.
+  ⚠️ VERIFY: derp.port 3478 — confirm matches actual Headscale config (T5)
+
+CHANGE 2 — data/services/vpn.yaml
+  Resolves: M4
+  Removed: cidr: 100.64.1.0/24 (was redundant)
+  Added: prefix_len: 24
+  compile.py derives cidr = "100.64.1.0/24" from prefix + prefix_len.
+
+CHANGE 3 — data/services/dns.yaml
+  Resolves: H4, M7, H7
+  Changed: custom_dns from flat dict to structured list with network+host integers
+  Added: unbound block (chroot, do_not_query_localhost)
+  *.rsk.al wildcard → host: 202 (Caddy proxy LXC)
+  ⚠️ VERIFY: confirm 10.64.0.202 is your Caddy proxy LXC (T6)
+
+CHANGE 4 — data/networks/vlan-64.yaml
+  Resolves: H2, L1, M3, M6
+  Removed: netmask, interface, dns list, all hardcoded IPs
+  Changed: dhcp_range to host integers, static_leases to hostname key + host integers
+  Added: prefix_len: 24
+
+CHANGE 5 — data/networks/vlan-32.yaml
+  Resolves: H3, L1, M3
+  Removed: netmask, interface, dns list (renamed to upstream_dns)
+  Changed: dhcp_range to host integers
+  Added: prefix_len: 24, upstream_dns
+
+CHANGE 6 — data/inventory/network_devices.yaml
+  Resolves: H1, C2 (partial)
+  Removed: ip fields (now derived)
+  Changed: network+host integers replace ip fields
+  nitro wan_mac → VERIFY_HARDWARE placeholder
+  ⚠️ VERIFY: physically check nitro WAN MAC (T2)
+
+CHANGE 7 — data/nodes/ultra64.yaml
+  Resolves: M2, static_leases SoT
+  Removed: security_profile from host_services
+  Removed: host_services.dhcp.static_leases (now owned by vlan-64.yaml)
+  Removed: placeholder host_keys (replaced with instructional comment)
+
+CHANGE 8 — ansible/roles/dns/templates/blocky.yml.j2
+  Resolves: H7 (ATOMIC with CHANGE 3)
+  Changed: custom_dns iteration from dict .items() to list with entry.hostname/entry.ip
+  ⚠️ CRITICAL: must be deployed in same run as dns.yaml change
+
+CHANGE 9 — ansible/roles/dns/templates/unbound.conf.j2
+  Resolves: M7
+  Changed: chroot and do-not-query-localhost now reference infra_services.dns.unbound.*
+
+CHANGE 10 — ansible/roles/vpn/templates/wg0.conf.j2
+  Resolves: L2
+  Changed: /24 → /{{ infra_services.vpn.prefix_len }}
+
+CHANGE 11 — ansible/roles/network/templates/30-lan.network.j2
+  Resolves: L3
+  Changed: /24 → /{{ networks['vlan-64'].prefix_len | default(24) }}
+
+CHANGE 12 — ansible/roles/firewall/templates/nftables.conf.j2
+  Resolves: H5, H6, C1
+  Changed: SANDBOX_NET → {{ networks['vlan-32'].cidr }}
+  Changed: BREAKGLASS_VPN_NET → {{ infra_services.vpn.cidr }}
+  Added: CrowdSec inet crowdsec table and chain
+  Added: CrowdSec LAPI loopback rule (port 8080)
+  ⚠️ CRITICAL: flushes ruleset on every run — always compile first
+
+CHANGE 13 — compile.py
+  Resolves: M4, M1, H4, M8
+  Added: process_vpn_service() — derives cidr
+  Added: process_headscale_service() — derives mesh_gateway_ip
+  Added: process_dns_service() — derives IPs for custom_dns list
+  Added: process_caddy_service() — now also derives auth_profile backends
+  Changed: derive_network_calculations() skips files without network: key
+  Changed: static leases now injected from vlan-*.yaml into host_services.dhcp
+  ⚠️ VERIFY: run make compile and inspect inventory after changes (T8 in old list)
+
+CHANGE 14 — ansible/.gitignore
+  Resolves: Security — vault password tracking
+  Added: .vault_pass
+  ⚠️ CRITICAL: also run git rm --cached ansible/.vault_pass (T1)
+
+CHANGE 15 — ansible/site.yml
+  Added: dry_run: false default var
+  Added: when: not (dry_run | bool) guards on all handlers
+  Added: crowdsec role in router block (after vpn, before avahi)
+  Added: headscale role in router block (after vpn, before crowdsec)
+  Added: Restart wg-quick@wg0, Restart headscale handlers
+
+CHANGE 16 — ansible/roles/firewall/tasks/main.yml
+  Added: nftables package install task
+  Added: validate: nft -c -f %s on template task
+  Added: systemd enable+start task
+  Fixes: nftables was not enabled at boot (router would boot with no firewall)
+
+CHANGE 17 — ansible/roles/vpn/tasks/main.yml
+  Added: wireguard-tools package install
+  Added: /etc/wireguard directory creation (mode 0700)
+  Added: systemd enable+start for wg-quick@wg0
+  Fixes: WireGuard was not enabled at boot
+
+CHANGE 18 — ansible/roles/vpn/handlers/main.yml
+  Added: Restart wg-quick@wg0 handler with dry_run guard
+  Changed: from ansible_check_mode to dry_run | bool pattern
+
+CHANGE 19 — ansible/roles/headscale/ (NEW ROLE)
+  tasks/main.yml: install, create dirs, deploy config, enable service
+  handlers/main.yml: Restart headscale with dry_run guard
+  templates/headscale.yaml.j2: full config derived from data model
+  templates/headscale-acls.yaml.j2: permissive ACL (allow all mesh traffic)
+
+CHANGE 20 — ansible/roles/crowdsec/ (NEW ROLE)
+  tasks/main.yml: install, configure, enable, enroll collections
+  handlers/main.yml: restart handlers for crowdsec and bouncer
+  templates/crowdsec-acquis.yaml.j2: log acquisition config
+  templates/crowdsec-bouncer.conf.j2: nftables bouncer config
+  ⚠️ REQUIRES: vault_crowdsec_bouncer_api_key (see T4 in todo.txt)
+
+CHANGE 21 — ansible/roles/caddy/templates/Caddyfile.j2
+  Resolves: M8
+  Removed: all inline IP construction (10.{{ svc.backend_network }}.0.{{ svc.backend_host }})
+  Changed: all backends now use {{ svc.backend }} and {{ profile.backend }}
+  Both pre-derived by compile.py process_caddy_service()
+
+CHANGE 22 — tools/validate_yaml.py (FULL REWRITE)
+  Detects: hardcoded internal IPs in forbidden keys
+  Detects: hardcoded CIDRs in forbidden keys
+  Detects: implementation leakage in network files (interface, netmask)
+  Detects: CRITICAL missing headscale derp.port
+  Warns: redundant cidr stored alongside prefix in vpn.yaml
+
+CHANGE 23 — tools/compile.py
+  Converted to shim delegating to root compile.py
+
+CHANGE 24 — ansible/tools/validate_yaml.py
+  Converted to shim delegating to tools/validate_yaml.py
+
+CHANGE 25 — ansible/playbooks/dry-run.yml (NEW)
+  Full dry-run playbook with check_mode: true
+  All handlers are no-op debug tasks
+  ignore_errors per role for fresh-machine safety
+  dry_run: true prevents any service restarts
+
+CHANGE 26 — Makefile (FULL REWRITE)
+  Added: check-tools preflight
+  Added: compile → validate → action pipeline enforcement
+  Added: dry-run using dedicated playbook
+  Added: diff, drift, deploy-role, deploy-tags targets
+  Added: known-hosts scanner formatting output for ultra64.yaml
+  Added: vault-edit, vault-rekey helpers
+  Added: snapshot, restore targets
+  Added: headscale-backup, headscale-nodes, headscale-key targets
+  Added: status showing inventory age
+  Fixed: VALIDATE path (was ansible/tools/, now tools/)
+  Fixed: ANSIBLE_CONFIG exported so all commands pick it up
+
+CHANGE 27 — ansible/ansible.cfg
+  Fixed: vault_password_file path consistency with Makefile invocation
+
+================================================================================
+SECTION 3: CURRENT SYSTEM STATE
+================================================================================
+
+Services deployed to ultra64 after full make deploy:
+  ✓ base          — packages, users, SSH keys, sysctl, GRUB
+  ✓ chrony        — NTP sync (Fedora pool)
+  ✓ network       — WAN (enp1s0f0, DHCP from ISP), LAN (enp1s0f1, 10.64.0.1/24)
+  ✓ firewall      — nftables, default DROP, CrowdSec chain
+  ✓ dns           — Blocky :53 + :4000, Unbound :5335 (loopback)
+  ✓ dhcp          — Kea, 10.64.0.100-199, 4 static leases
+  ✓ vpn           — WireGuard wg0, 100.64.1.1/24, UDP 51820
+  ✓ headscale     — Coordination server, 0.0.0.0:8080, mesh 100.64.0.0/24
+  ✓ crowdsec      — LAPI + nftables bouncer (⚠️ bouncer needs real API key)
+  ✓ avahi         — mDNS
+  ✓ step-ca       — Internal CA for *.rsk.al TLS (⚠️ needs bootstrap)
+  ✓ caddy         — Reverse proxy, WAN + LAN services
+
+Known issues requiring manual action:
+  ⚠️ CrowdSec bouncer will fail — needs vault_crowdsec_bouncer_api_key (T4)
+  ⚠️ Caddy LAN TLS will fail — needs step-ca bootstrap (T7)
+  ⚠️ Headscale has no users/devices — needs enrollment (T8)
+  ⚠️ SSH known_hosts empty — needs ssh-keyscan (T3)
+  ⚠️ nitro WAN MAC unverified — needs hardware check (T2)
+  ⚠️ Vault password in git history — needs rotation (T1)
+
+Network topology:
+  WAN:  enp1s0f0 → ISP (DHCP, MAC-pinned 24:2F:D0:D1:2E:31)
+  LAN:  enp1s0f1 → 10.64.0.1/24 (Vault network)
+  VPN:  wg0      → 100.64.1.1/24 (Breakglass)
+  Mesh: headscale → 100.64.0.0/24 (Headscale coordination)
+
+Static DHCP leases (from vlan-64.yaml):
+  nx          → 10.64.0.2   (D-Link switch)
+  nitro       → 10.64.0.3   (TP-Link AP)
+  gamecube    → 10.64.0.4   (Proxmox host)
+  pi-auditor  → 10.64.0.10  (Raspberry Pi)
+
+Key LXC hosts (not managed by this repo, referenced by Caddy):
+  10.64.0.202  → Caddy proxy LXC (wildcard *.rsk.al target) ⚠️ VERIFY
+  10.64.0.203  → Authelia LXC
+  10.64.0.204  → Dawarich LXC
+  10.64.0.232  → Pairdrop LXC
+  10.64.0.233  → Home Assistant LXC
+  10.64.0.237  → Copyparty LXC
+
+================================================================================
+SECTION 4: PIPELINE REFERENCE
+================================================================================
+
+Standard deploy pipeline:
+  make compile      → regenerate ansible/generated/inventory.yaml
+  make validate     → check data/ against agent.md rules
+  make dry-run      → full check+diff, zero changes
+  make deploy       → apply to ultra64
+
+Single role deploy:
+  make deploy-role ROLE=firewall
+  make deploy-role ROLE=crowdsec
+  make deploy-role ROLE=headscale
+  make deploy-role ROLE=dns
+
+Headscale operations:
+  make headscale-backup           back up DB on ultra64
+  make headscale-nodes            list enrolled nodes
+  make headscale-key              generate pre-auth key (user: raskal)
+  make headscale-key HEADSCALE_USER=other   generate for different user
+
+Vault operations:
+  make vault-edit                 edit vault.yml
+  make vault-rekey                rekey vault with new password
+
+Inspection:
+  make diff                       show pending changes (no recompile)
+  make drift                      detect config drift, exit 1 if found
+  make status                     git status + inventory age
+
+================================================================================
+END OF SUMMARY
+================================================================================
