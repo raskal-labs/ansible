@@ -6,4 +6,27 @@ mesh_gateway_network: 64
 mesh_gateway_host: 4
 derp:
   port: 3478
-description: Headscale VPN mesh coordination service
+server:
+  # Headscale runs on gamecube (10.64.0.4), not on the router.
+  # The router only forwards DERP/STUN traffic and exposes wfc.raskal.io via Caddy.
+  host_network: 64
+  host: 4
+  grpc_port: 50443
+  metrics_port: 9090
+  db_path: /var/lib/headscale/db.sqlite
+  # ⚠️ Back up db_path before any gamecube OS-level changes.
+  # All enrolled nodes, users, and pre-auth keys live here.
+  # Losing this file requires re-enrolling all devices.
+state:
+  # State survival matrix:
+  # - ultra64 redeploy:      SAFE  (Headscale not on ultra64)
+  # - Headscale restart:     SAFE  (DB persists)
+  # - Package upgrade:       SAFE  (DB not touched)
+  # - gamecube redeploy:     SAFE  only if db_path is on persistent storage
+  # - gamecube OS reinstall: LOST  unless db_path is backed up first
+  db_backup_path: /root/headscale-db-backups/
+description: >
+  Headscale VPN mesh coordination service. Runs on gamecube (10.64.0.4).
+  The router (ultra64) forwards DERP STUN traffic on UDP 3478 and proxies
+  the coordination endpoint wfc.raskal.io via Caddy reverse proxy.
+  Clients enroll using: tailscale up --login-server https://wfc.raskal.io

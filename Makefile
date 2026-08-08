@@ -1,124 +1,316 @@
-# ==============================================================================
-# Homelab Infrastructure Operator Interface
-# ==============================================================================
+# =============================================================================
+# Infrastructure CMS — Makefile
+# =============================================================================
+# Usage:
+#   make compile                  Regenerate ansible/generated/inventory.yaml
+#   make validate                 Validate data/ against agent.md rules
+#   make dry-run                  Full dry-run (compile+validate+check+diff)
+#   make deploy                   Full deploy to ultra64
+#   make deploy HOST=<host>       Full deploy to a specific host
+#   make deploy-role ROLE=<role>  Deploy a single role (e.g. firewall)
+#   make deploy-tags TAGS=<tags>  Deploy by ansible tag (e.g. crowdsec)
+#   make diff                     Show what would change (check+diff only)
+#   make drift                    Detect configuration drift on HOST
+#   make lint                     Run ansible-lint on site.yml
+#   make known-hosts              Scan real SSH host keys from ultra64
+#   make vault-edit               Open vault.yml for editing
+#   make vault-rekey              Rekey the vault with a new password
+#   make snapshot                 Save a snapshot of the current inventory
+#   make restore                  Restore inventory from snapshot and deploy
+#   make headscale-backup         Back up Headscale DB on gamecube
+#   make headscale-nodes          List enrolled Headscale nodes
+#   make headscale-key            Generate a new Headscale pre-auth key
+#   make clean                    Remove all generated files (keeps .gitkeep)
+#   make status                   Git status + last 5 commits
+#   make help                     Show this help
+# =============================================================================
 
-.PHONY: all check-tools validate compile inventory syntax dry-run diff drift-check deploy status clean lint doctor graph docs
+SHELL := /bin/bash
 
-# --- Dynamic Execution Arguments ---
-# Use: make deploy TARGET=ultra64 CONN=local
-TARGET       ?= all
-CONN         ?= smart
+# --- Paths ---
+REPO_ROOT        := $(shell pwd)
+INVENTORY        := ansible/generated/inventory.yaml
+INVENTORY_BAK    := ansible/generated/inventory.bak
+VAULT_PASS_FILE  := ansible/.vault_pass
+VAULT_FILE       := ansible/group_vars/all/vault.yml
+SITE_PLAYBOOK    := ansible/site.yml
+DRY_RUN_PLAYBOOK := ansible/playbooks/dry-run.yml
+COMPILE          := python3 compile.py
+VALIDATE         := python3 tools/validate_yaml.py
+ANSIBLE_CFG      := ansible/ansible.cfg
 
-# --- Variables & Paths ---
-DATA_DIR     := data
-GEN_DIR      := ansible/generated
-TOOLS_DIR    := ansible/tools
-ANSIBLE_DIR  := ansible
+# --- Target host (override with: make deploy HOST=somehost) ---
+HOST             := ultra64
 
-ANSIBLE_CONFIG := $(ANSIBLE_DIR)/ansible.cfg
-export ANSIBLE_CONFIG
+# --- Router IP ---
+ROUTER_IP        := 10.64.0.1
 
-INVENTORY    := $(GEN_DIR)/inventory.yaml
-PLAYBOOK     := $(ANSIBLE_DIR)/site.yml
-COMPILER     := ./compile.py
-LEGACY_TRANS := $(ANSIBLE_DIR)/inventory/transform.py
-VALIDATOR    := $(TOOLS_DIR)/validate_yaml.py
+# --- Headscale host (gamecube) ---
+HEADSCALE_HOST   := 10.64.0.4
+HEADSCALE_USER   := raskal
 
-# Default target
-all: dry-run
+export ANSIBLE_CONFIG := $(ANSIBLE_CFG)
 
-# ==============================================================================
-# Core Pipeline Targets
-# ==============================================================================
+ANSIBLE_FLAGS    := -i $(INVENTORY) --vault-password-file $(VAULT_PASS_FILE)
 
+# =============================================================================
+.PHONY: all compile validate dry-run deploy deploy-role deploy-tags \
+        diff drift lint known-hosts vault-edit vault-rekey \
+        snapshot restore headscale-backup headscale-nodes headscale-key \
+        clean status help check-tools
+
+all: help
+
+# =============================================================================
+# PREFLIGHT
+# =============================================================================
 check-tools:
-	@command -v python3 >/dev/null || \
-		(echo "Error: Missing python3"; exit 1)
-	@command -v ansible-playbook >/dev/null || \
-		(echo "Error: Missing ansible-playbook"; exit 1)
+	@command -v python3 >/dev/null 2>&1 || \
+		(echo "ERROR: python3 not found"; exit 1)
+	@command -v ansible-playbook >/dev/null 2>&1 || \
+		(echo "ERROR: ansible-playbook not found"; exit 1)
+	@test -f $(VAULT_PASS_FILE) || \
+		(echo "ERROR: $(VAULT_PASS_FILE) not found — create it with your vault password"; exit 1)
 
-validate:
-	@python3 ansible/tools/validate_yaml.py
+# =============================================================================
+# COMPILE
+# =============================================================================
+compile: check-tools
+	@echo "==> [COMPILE] Regenerating inventory from data/..."
+	@$(COMPILE)
+	@echo "==> [COMPILE] Done. Output: $(INVENTORY)"
 
-compile: validate
-ifndef SKIP_COMPILE
-	@python3 $(COMPILER)
-else
-	@echo "==> [SKIP] Skipping compilation step (using existing generated/inventory.yaml)"
-endif
+# =============================================================================
+# VALIDATE
+# =============================================================================
+validate: check-tools
+	@echo "==> [VALIDATE] Checking data/ against agent.md rules..."
+	@$(VALIDATE)
 
-dry-run: compile
-	@ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i $(INVENTORY) $(PLAYBOOK) --check
+# =============================================================================
+# DRY RUN
+# =============================================================================
+dry-run: compile validate
+	@echo "==> [DRY RUN] Running against $(HOST) — no changes will be made..."
+	@ANSIBLE_CONFIG=$(ANSIBLE_CFG) ansible-playbook $(DRY_RUN_PLAYBOOK) \
+		$(ANSIBLE_FLAGS) \
+		--limit $(HOST) \
+		--diff
 
-apply: compile
-	@ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i $(INVENTORY) $(PLAYBOOK)
+# =============================================================================
+# DIFF
+# =============================================================================
+diff: check-tools
+	@echo "==> [DIFF] Showing pending changes on $(HOST)..."
+	@ANSIBLE_CONFIG=$(ANSIBLE_CFG) ansible-playbook $(SITE_PLAYBOOK) \
+		$(ANSIBLE_FLAGS) \
+		--limit $(HOST) \
+		--check --diff
 
-snapshot:
-	@cp $(INVENTORY) $(GEN_DIR)/inventory.bak
-	@echo "==> Saved snapshot to $(GEN_DIR)/inventory.bak"
-
-restore-apply:
-	@cp $(GEN_DIR)/inventory.bak $(INVENTORY)
-	@echo "==> Restored $(GEN_DIR)/inventory.bak"
-	@ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i $(INVENTORY) $(PLAYBOOK)
-
-inventory: compile
-	@echo "==> [INVENTORY] Generated inventory:"
-	@test -f $(INVENTORY) || (echo "Error: Missing $(INVENTORY)"; exit 1)
-	@ls -lh $(INVENTORY)
-
-syntax: compile check-tools
-	@echo "==> [SYNTAX] Running Ansible syntax validation..."
-	@ansible-playbook -i $(INVENTORY) $(PLAYBOOK) --syntax-check
-
-diff: syntax
-	@echo "==> [DIFF] Executing simulated deployment with visual diffs against $(TARGET)..."
-	@ansible-playbook -i $(INVENTORY) $(PLAYBOOK) --check --diff --limit $(TARGET) -c $(CONN)
-
-drift-check: syntax
-	@echo "==> [DRIFT] Scanning for configuration drift on $(TARGET)..."
-	@ansible-playbook -i $(INVENTORY) $(PLAYBOOK) --check --limit $(TARGET) -c $(CONN) > /tmp/ansible-drift-$(TARGET).log
-	@if grep -q 'changed=[1-9]' /tmp/ansible-drift-$(TARGET).log; then \
-		echo "    CRITICAL: Configuration drift detected! Manual changes found."; \
-		echo "    Run 'make diff TARGET=$(TARGET) CONN=$(CONN)' to view changes."; \
+# =============================================================================
+# DRIFT
+# =============================================================================
+drift: compile validate
+	@echo "==> [DRIFT] Scanning for configuration drift on $(HOST)..."
+	@ANSIBLE_CONFIG=$(ANSIBLE_CFG) ansible-playbook $(SITE_PLAYBOOK) \
+		$(ANSIBLE_FLAGS) \
+		--limit $(HOST) \
+		--check 2>&1 | tee /tmp/ansible-drift-$(HOST).log; \
+	if grep -q 'changed=[1-9]' /tmp/ansible-drift-$(HOST).log; then \
+		echo ""; \
+		echo "==> [DRIFT] ALERT: Configuration drift detected on $(HOST)."; \
+		echo "==> [DRIFT] Run 'make diff HOST=$(HOST)' to inspect changes."; \
 		exit 1; \
 	else \
-		echo "    OK: No drift detected. Infrastructure matches Source of Truth."; \
+		echo "==> [DRIFT] OK: No drift detected."; \
 	fi
 
-deploy: syntax
-	@echo "==> [DEPLOY] Executing live infrastructure deployment against $(TARGET)..."
-	@ansible-playbook -i $(INVENTORY) $(PLAYBOOK) --limit $(TARGET) -c $(CONN)
+# =============================================================================
+# DEPLOY
+# =============================================================================
+deploy: compile validate
+	@echo "==> [DEPLOY] Deploying full infrastructure to $(HOST)..."
+	@ANSIBLE_CONFIG=$(ANSIBLE_CFG) ansible-playbook $(SITE_PLAYBOOK) \
+		$(ANSIBLE_FLAGS) \
+		--limit $(HOST)
 
-# ==============================================================================
-# Utility & State Targets
-# ==============================================================================
+# =============================================================================
+# DEPLOY ROLE
+# =============================================================================
+deploy-role: compile validate
+ifndef ROLE
+	$(error ROLE is not set. Usage: make deploy-role ROLE=firewall)
+endif
+	@echo "==> [DEPLOY] Deploying role '$(ROLE)' to $(HOST)..."
+	@ANSIBLE_CONFIG=$(ANSIBLE_CFG) ansible-playbook $(SITE_PLAYBOOK) \
+		$(ANSIBLE_FLAGS) \
+		--limit $(HOST) \
+		--tags $(ROLE)
 
-status:
-	@echo "==> [STATUS] Git Repository State:"
-	@git status -s
+# =============================================================================
+# DEPLOY TAGS
+# =============================================================================
+deploy-tags: compile validate
+ifndef TAGS
+	$(error TAGS is not set. Usage: make deploy-tags TAGS=crowdsec)
+endif
+	@echo "==> [DEPLOY] Deploying tags '$(TAGS)' to $(HOST)..."
+	@ANSIBLE_CONFIG=$(ANSIBLE_CFG) ansible-playbook $(SITE_PLAYBOOK) \
+		$(ANSIBLE_FLAGS) \
+		--limit $(HOST) \
+		--tags $(TAGS)
+
+# =============================================================================
+# LINT
+# =============================================================================
+lint: check-tools
+	@echo "==> [LINT] Running ansible-lint on $(SITE_PLAYBOOK)..."
+	@ANSIBLE_CONFIG=$(ANSIBLE_CFG) ansible-lint $(SITE_PLAYBOOK)
+
+# =============================================================================
+# KNOWN HOSTS
+# =============================================================================
+known-hosts:
+	@echo "==> [KNOWN-HOSTS] Scanning SSH host keys from $(HOST) ($(ROUTER_IP))..."
+	@echo "==> Paste the output below into data/nodes/ultra64.yaml under host_keys:"
 	@echo ""
-	@echo "==> [STATUS] Generated Artifacts ($(GEN_DIR)):"
-	@ls -la $(GEN_DIR) 2>/dev/null || echo "    No generated artifacts present."
+	@ssh-keyscan -t ed25519,rsa $(ROUTER_IP) 2>/dev/null | grep -v '^#' | \
+		awk '{print "  " $$3 ": \"" $$2 "\""}'
+	@echo ""
+	@echo "==> After updating ultra64.yaml, run: make compile"
 
+# =============================================================================
+# VAULT
+# =============================================================================
+vault-edit:
+	@echo "==> [VAULT] Opening $(VAULT_FILE) for editing..."
+	@ansible-vault edit $(VAULT_FILE) --vault-password-file $(VAULT_PASS_FILE)
+
+vault-rekey:
+	@echo "==> [VAULT] Rekeying $(VAULT_FILE)..."
+	@ansible-vault rekey $(VAULT_FILE) --vault-password-file $(VAULT_PASS_FILE)
+	@echo "==> [VAULT] Done. Remember to update $(VAULT_PASS_FILE) with the new password."
+
+# =============================================================================
+# SNAPSHOT / RESTORE
+# =============================================================================
+snapshot:
+	@echo "==> [SNAPSHOT] Saving inventory snapshot to $(INVENTORY_BAK)..."
+	@cp $(INVENTORY) $(INVENTORY_BAK)
+	@echo "==> [SNAPSHOT] Done."
+
+restore: check-tools
+	@test -f $(INVENTORY_BAK) || \
+		(echo "ERROR: No snapshot found at $(INVENTORY_BAK). Run 'make snapshot' first."; exit 1)
+	@echo "==> [RESTORE] Restoring inventory from snapshot..."
+	@cp $(INVENTORY_BAK) $(INVENTORY)
+	@echo "==> [RESTORE] Deploying from restored snapshot..."
+	@ANSIBLE_CONFIG=$(ANSIBLE_CFG) ansible-playbook $(SITE_PLAYBOOK) \
+		$(ANSIBLE_FLAGS) \
+		--limit $(HOST)
+
+# =============================================================================
+# HEADSCALE OPERATIONS
+# =============================================================================
+headscale-backup:
+	@echo "==> [HEADSCALE] Backing up Headscale DB on gamecube ($(HEADSCALE_HOST))..."
+	@ssh root@$(HEADSCALE_HOST) \
+		"mkdir -p /root/headscale-db-backups && \
+		 cp /var/lib/headscale/db.sqlite \
+		    /root/headscale-db-backups/db-\$$(date +%Y%m%d-%H%M%S).sqlite && \
+		 ls -t /root/headscale-db-backups/db-*.sqlite | tail -n +31 | xargs rm -f 2>/dev/null; \
+		 echo 'Backup complete. Current backups:'; \
+		 ls -lh /root/headscale-db-backups/"
+	@echo "==> [HEADSCALE] Done."
+
+headscale-nodes:
+	@echo "==> [HEADSCALE] Enrolled nodes:"
+	@ssh root@$(HEADSCALE_HOST) "headscale nodes list"
+
+headscale-key:
+	@echo "==> [HEADSCALE] Generating reusable pre-auth key for user $(HEADSCALE_USER)..."
+	@echo "==> Enroll a device with:"
+	@echo "    tailscale up --login-server https://wfc.raskal.io --authkey <key>"
+	@echo ""
+	@ssh root@$(HEADSCALE_HOST) \
+		"headscale preauthkeys create --user $(HEADSCALE_USER) --reusable --expiration 720h"
+
+# =============================================================================
+# CLEAN
+# =============================================================================
 clean:
-	@echo "==> [CLEAN] Removing disposable build artifacts..."
-	@rm -rf $(GEN_DIR)
-	@echo "    Cleaned $(GEN_DIR)."
+	@echo "==> [CLEAN] Removing generated files..."
+	@find ansible/generated -type f ! -name '.gitkeep' -delete
+	@find generated -type f ! -name '.gitkeep' -delete 2>/dev/null || true
+	@echo "==> [CLEAN] Done."
 
-# ==============================================================================
-# Future-Ready Placeholders
-# ==============================================================================
+# =============================================================================
+# STATUS
+# =============================================================================
+status:
+	@echo "==> [STATUS] Git state:"
+	@git status --short
+	@echo ""
+	@echo "==> [STATUS] Last 5 commits:"
+	@git log --oneline -5
+	@echo ""
+	@echo "==> [STATUS] Generated artifacts:"
+	@ls -lh ansible/generated/ 2>/dev/null || echo "  None."
+	@echo ""
+	@echo "==> [STATUS] Inventory age:"
+	@test -f $(INVENTORY) && \
+		echo "  $(INVENTORY) last modified: $$(date -r $(INVENTORY) '+%Y-%m-%d %H:%M:%S')" || \
+		echo "  $(INVENTORY) does not exist — run: make compile"
 
-lint:
-	@echo "==> [LINT] (Future) Run YAML, Python, and Jinja formatting checks."
-
-doctor:
-	@echo "==> [DOCTOR] (Future) Running system health checks (tools, schemas, IPs, Ansible config)."
-
-graph: compile
-	@echo "==> [GRAPH] (Future) Generating infrastructure diagrams from source data."
-
-docs: compile
-	@echo "==> [DOCS] (Future) Auto-generating documentation from source data."
-
+# =============================================================================
+# HELP
+# =============================================================================
+help:
+	@echo ""
+	@echo "  Infrastructure CMS — Makefile targets"
+	@echo "  ======================================"
+	@echo ""
+	@echo "  Pipeline (enforced order: compile → validate → action):"
+	@echo "    make dry-run                  Full dry-run, zero changes"
+	@echo "    make deploy                   Full deploy to ultra64"
+	@echo "    make deploy HOST=<host>       Full deploy to a specific host"
+	@echo "    make deploy-role ROLE=<role>  Deploy one role  (e.g. firewall)"
+	@echo "    make deploy-tags TAGS=<tags>  Deploy by tag    (e.g. crowdsec)"
+	@echo ""
+	@echo "  Inspection:"
+	@echo "    make diff                     Show pending changes (no compile)"
+	@echo "    make drift                    Detect config drift, exit 1 if found"
+	@echo "    make lint                     Run ansible-lint"
+	@echo "    make status                   Git status + inventory age"
+	@echo ""
+	@echo "  Data pipeline:"
+	@echo "    make compile                  Regenerate inventory from data/"
+	@echo "    make validate                 Validate data/ against agent.md"
+	@echo ""
+	@echo "  Vault:"
+	@echo "    make vault-edit               Edit vault.yml"
+	@echo "    make vault-rekey              Rekey vault with new password"
+	@echo ""
+	@echo "  Headscale:"
+	@echo "    make headscale-backup         Back up Headscale DB on gamecube"
+	@echo "    make headscale-nodes          List all enrolled nodes"
+	@echo "    make headscale-key            Generate a new pre-auth key"
+	@echo "      HEADSCALE_USER=<user>       Override user (default: raskal)"
+	@echo ""
+	@echo "  Utilities:"
+	@echo "    make known-hosts              Scan + format SSH host keys"
+	@echo "    make snapshot                 Save inventory snapshot"
+	@echo "    make restore                  Restore snapshot and deploy"
+	@echo "    make clean                    Remove all generated files"
+	@echo ""
+	@echo "  Critical pre-deploy checklist:"
+	@echo "    1.  make known-hosts          Capture real SSH host keys"
+	@echo "    2.  make vault-edit           Add vault_crowdsec_bouncer_api_key"
+	@echo "    3.  make compile              Regenerate inventory"
+	@echo "    4.  make validate             Confirm no agent.md violations"
+	@echo "    5.  make dry-run              Verify all templates render"
+	@echo "    6.  make deploy               Apply to router"
+	@echo ""
+	@echo "  Before any gamecube maintenance:"
+	@echo "    make headscale-backup         Always back up before touching gamecube"
+	@echo ""
