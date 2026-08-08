@@ -3,4 +3,14 @@ Wants=network-online.target
 After=network-online.target
 
 [Service]
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+ProtectSystem=full
 ProtectHome=yes
+PrivateTmp=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_NETLINK
+RestrictNamespaces=yes
+MemoryDenyWriteExecute=yes
+LockPersonality=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes

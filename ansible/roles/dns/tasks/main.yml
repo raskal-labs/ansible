@@ -1,4 +1,12 @@
 ---
+- name: Ensure configuration directories exist
+  ansible.builtin.file:
+    path: /etc/blocky
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
 - name: Deploy core DNS configurations
   ansible.builtin.template:
     src: "{{ item.src }}"
