@@ -2,10 +2,11 @@
 - name: Provision Infrastructure Nodes
   hosts: all
   become: true
-  
+
   vars:
     min_ansible_version: "2.14.0"
-    
+    dry_run: false
+
   tasks:
     - name: Ensure Ansible version requirement
       ansible.builtin.assert:
@@ -15,6 +16,12 @@
     - name: Log playbook execution start to system journal
       ansible.builtin.command: logger -t ansible-infra -p syslog.info "Starting infrastructure playbook run."
       changed_when: false
+      when: not (dry_run | bool)
+
+    - name: "[DRY RUN] Log playbook execution start"
+      ansible.builtin.debug:
+        msg: "DRY RUN: Would log infrastructure playbook start to system journal."
+      when: dry_run | bool
 
     - name: Apply Universal Foundation
       ansible.builtin.import_role:
@@ -37,6 +44,8 @@
         - ansible.builtin.import_role:
             name: vpn
         - ansible.builtin.import_role:
+            name: crowdsec
+        - ansible.builtin.import_role:
             name: avahi
         - ansible.builtin.import_role:
             name: step-ca
@@ -47,22 +56,47 @@
   handlers:
     - name: Apply sysctl configuration
       ansible.builtin.command: sysctl --system
+      when: not (dry_run | bool)
+
     - name: Reload systemd daemon
       ansible.builtin.systemd:
         daemon_reload: true
+      when: not (dry_run | bool)
+
     - name: Regenerate GRUB config
       ansible.builtin.command: grub2-mkconfig -o /boot/grub2/grub.cfg
+      when: not (dry_run | bool)
+
     - name: Reload udev rules
       ansible.builtin.command:
         argv:
           - /bin/sh
           - -c
           - udevadm control --reload-rules && udevadm trigger
+      when: not (dry_run | bool)
+
     - name: Restart nftables
       ansible.builtin.systemd:
         name: nftables
         state: restarted
+      when: not (dry_run | bool)
+
     - name: Restart kea-dhcp4
       ansible.builtin.systemd:
         name: kea-dhcp4
         state: restarted
+      when: not (dry_run | bool)
+
+    - name: Restart crowdsec
+      ansible.builtin.systemd:
+        name: crowdsec
+        state: restarted
+        enabled: true
+      when: not (dry_run | bool)
+
+    - name: Restart crowdsec-firewall-bouncer
+      ansible.builtin.systemd:
+        name: crowdsec-firewall-bouncer
+        state: restarted
+        enabled: true
+      when: not (dry_run | bool)

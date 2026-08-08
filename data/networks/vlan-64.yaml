@@ -3,23 +3,21 @@ id: vlan-64
 type: network
 network: 64
 gateway_host: 1
-netmask: "255.255.255.0"
-interface: "eth1"
-dns:
-  - "10.64.0.1"
+dns_host: 1
+prefix_len: 24
 dhcp_range:
-  start: "10.64.0.100"
-  end: "10.64.0.199"
+  start: 100
+  end: 199
 static_leases:
-  - name: "nx"
+  - hostname: "nx"
     mac: "88:76:B9:8F:30:E0"
-    ip: "10.64.0.2"
-  - name: "nitro"
+    host: 2
+  - hostname: "nitro"
     mac: "24:2F:D0:D1:2E:30"
-    ip: "10.64.0.3"
-  - name: "gamecube"
+    host: 3
+  - hostname: "gamecube"
     mac: "84:47:09:44:8B:F9"
-    ip: "10.64.0.4"
-  - name: "pi-auditor"
+    host: 4
+  - hostname: "pi-auditor"
     mac: "74:A7:EA:EE:67:ED"
-    ip: "10.64.0.10"
+    host: 10

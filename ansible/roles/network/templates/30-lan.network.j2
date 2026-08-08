@@ -2,7 +2,7 @@
 Name={{ interfaces.lan.dev }}
 
 [Address]
-Address={{ ip }}/24
+Address={{ ip }}/{{ networks['vlan-64'].prefix_len | default(24) }}
 
 [Network]
 DHCPServer=yes

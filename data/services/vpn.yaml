@@ -2,7 +2,7 @@
 id: vpn
 security_profile: strict
 prefix: 100.64.1
-cidr: 100.64.1.0/24
+prefix_len: 24
 packages:
   - wireguard-tools
 templates:

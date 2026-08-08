@@ -2,5 +2,8 @@
 id: headscale
 security_profile: hardened
 mesh_subnet: 100.64.0.0/24
-mesh_gateway_ip: 10.64.0.4
+mesh_gateway_network: 64
+mesh_gateway_host: 4
+derp:
+  port: 3478
 description: Headscale VPN mesh coordination service

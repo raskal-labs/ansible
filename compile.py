@@ -26,27 +26,24 @@ def aggregate_packages(environment_data, services_data, nodes_data):
     """Aggregate and deduplicate packages from all sources."""
     packages = set()
     packages_absent = set()
-    
-    # Add packages from environment
+
     if 'packages' in environment_data:
         packages.update(environment_data['packages'])
     if 'packages_absent' in environment_data:
         packages_absent.update(environment_data['packages_absent'])
-    
-    # Add packages from services
+
     for service_data in services_data.values():
         if 'packages' in service_data:
             packages.update(service_data['packages'])
         if 'packages_absent' in service_data:
             packages_absent.update(service_data['packages_absent'])
-    
-    # Add packages from nodes
+
     for node_data in nodes_data.values():
         if 'packages' in node_data:
             packages.update(node_data['packages'])
         if 'packages_absent' in node_data:
             packages_absent.update(node_data['packages_absent'])
-    
+
     return sorted(list(packages)), sorted(list(packages_absent))
 
 
@@ -54,12 +51,12 @@ def load_services_data():
     """Load all service configuration files."""
     services_data = {}
     services_dir = os.path.join("data", "services")
-    
+
     if os.path.exists(services_dir):
         for service_file in glob.glob(os.path.join(services_dir, "*.yaml")):
             service_name = os.path.splitext(os.path.basename(service_file))[0]
             services_data[service_name] = load_yaml(service_file)
-    
+
     return services_data
 
 
@@ -67,35 +64,40 @@ def load_networks_data():
     """Load all network configuration files."""
     networks_data = {}
     networks_dir = os.path.join("data", "networks")
-    
+
     if os.path.exists(networks_dir):
         for network_file in glob.glob(os.path.join(networks_dir, "*.yaml")):
             network_name = os.path.splitext(os.path.basename(network_file))[0]
             networks_data[network_name] = load_yaml(network_file)
-    
+
     return networks_data
 
 
 def derive_network_calculations(networks_data):
-    """Derive calculated network values from conceptual data."""
+    """
+    Derive calculated network values from conceptual data.
+    Skips files that do not have a `network:` integer key (e.g. dhcp.yaml policy index).
+    """
     derived_networks = {}
-    
+
     for network_name, network_data in networks_data.items():
-        if 'network' in network_data:
-            network_id = network_data['network']
-            gateway_host = network_data.get('gateway_host', 1)
-            
-            # Calculate derived values
-            derived_networks[network_name] = {
-                'id': network_data.get('id', network_name),
-                'network': network_id,
-                'cidr': f"10.{network_id}.0.0/24",
-                'gateway': f"10.{network_id}.0.{gateway_host}",
-                'subnet_mask': "255.255.255.0",
-                'broadcast': f"10.{network_id}.0.255",
-                'network_address': f"10.{network_id}.0.0"
-            }
-    
+        if 'network' not in network_data:
+            continue
+        network_id = network_data['network']
+        gateway_host = network_data.get('gateway_host', 1)
+        prefix_len = network_data.get('prefix_len', 24)
+
+        derived_networks[network_name] = {
+            'id': network_data.get('id', network_name),
+            'network': network_id,
+            'prefix_len': prefix_len,
+            'cidr': f"10.{network_id}.0.0/{prefix_len}",
+            'gateway': f"10.{network_id}.0.{gateway_host}",
+            'subnet_mask': "255.255.255.0",
+            'broadcast': f"10.{network_id}.0.255",
+            'network_address': f"10.{network_id}.0.0"
+        }
+
     return derived_networks
 
 
@@ -104,9 +106,9 @@ def derive_ip_from_network_host(network, host):
     return f"10.{network}.0.{host}"
 
 
-def derive_cidr_from_network_host(network, host):
+def derive_cidr_from_network_host(network, host, prefix_len=32):
     """Calculate CIDR from network and host IDs."""
-    return f"10.{network}.0.{host}/24"
+    return f"10.{network}.0.{host}/{prefix_len}"
 
 
 def _get_node_ip(node_data):
@@ -114,92 +116,168 @@ def _get_node_ip(node_data):
     network = node_data.get('network')
     host = node_data.get('host')
     if network is not None and host is not None:
-        ip = derive_ip_from_network_host(network, host)
-        # Strip any accidental CIDR suffix
-        ip = ip.split('/')[0]
-        return ip
+        return derive_ip_from_network_host(network, host)
     return None
+
+
+def process_vpn_service(vpn_data):
+    """
+    Derive vpn.cidr from prefix + prefix_len.
+    Removes the need to store cidr in vpn.yaml.
+    """
+    processed = dict(vpn_data)
+    prefix = processed.get('prefix')
+    prefix_len = processed.get('prefix_len', 24)
+    if prefix:
+        processed['cidr'] = f"{prefix}.0/{prefix_len}"
+    return processed
+
+
+def process_headscale_service(headscale_data):
+    """
+    Derive mesh_gateway_ip from mesh_gateway_network + mesh_gateway_host.
+    Removes the need to store mesh_gateway_ip in headscale.yaml.
+    """
+    processed = dict(headscale_data)
+    gw_network = processed.get('mesh_gateway_network')
+    gw_host = processed.get('mesh_gateway_host')
+    if gw_network is not None and gw_host is not None:
+        processed['mesh_gateway_ip'] = derive_ip_from_network_host(gw_network, gw_host)
+    return processed
+
+
+def process_dns_service(dns_data):
+    """
+    Derive IPs for custom_dns entries from network + host integers.
+    Injects .ip into each list entry for template consumption.
+    """
+    processed = dict(dns_data)
+    raw_custom_dns = processed.get('custom_dns', [])
+
+    if isinstance(raw_custom_dns, list):
+        derived = []
+        for entry in raw_custom_dns:
+            e = dict(entry)
+            if 'network' in e and 'host' in e:
+                e['ip'] = derive_ip_from_network_host(e['network'], e['host'])
+            derived.append(e)
+        processed['custom_dns'] = derived
+
+    return processed
+
+
+def process_caddy_service(caddy_data):
+    """
+    Derive backend IPs for both services and auth_profiles in caddy.yaml.
+    """
+    processed = dict(caddy_data)
+
+    if 'services' in processed:
+        for svc in processed['services']:
+            if 'backend_network' in svc and 'backend_host' in svc:
+                backend_ip = derive_ip_from_network_host(
+                    svc['backend_network'],
+                    svc['backend_host']
+                )
+                svc['backend'] = f"{backend_ip}:{svc['backend_port']}"
+
+    if 'auth_profiles' in processed:
+        for name, profile in processed['auth_profiles'].items():
+            if 'backend_network' in profile and 'backend_host' in profile:
+                backend_ip = derive_ip_from_network_host(
+                    profile['backend_network'],
+                    profile['backend_host']
+                )
+                profile['backend'] = f"{backend_ip}:{profile['backend_port']}"
+
+    return processed
+
+
+def process_static_leases(dhcp_config, network_id):
+    """
+    Derive IPs for static leases from network + host integers.
+    """
+    if 'static_leases' not in dhcp_config:
+        return dhcp_config
+
+    processed = dict(dhcp_config)
+    for lease in processed['static_leases']:
+        lease_network = lease.get('network', network_id)
+        if 'host' in lease:
+            lease['ip'] = derive_ip_from_network_host(lease_network, lease['host'])
+
+    return processed
 
 
 def generate_inventory():
     """Generate ansible/generated/inventory.yaml with complete data preservation."""
     data_dir = "data"
     output_dir = "ansible/generated"
-    
-    # Load all data sources
+
     identities = load_yaml(os.path.join(data_dir, 'identities.yaml'))
     environment = load_yaml(os.path.join(data_dir, 'environment.yaml'))
     services_data = load_services_data()
     networks_data = load_networks_data()
-    
-    # Derive calculated network values
+
     derived_networks = derive_network_calculations(networks_data)
-    
-    # Load Headscale service data if it exists
-    headscale_data = services_data.get('headscale', {})
-    
-    # Initialize inventory structure
+
     inventory = {
         'all': {
             'hosts': {},
             'vars': {}
         }
     }
-    
-    # Load all node data
+
     nodes_data = {}
     for node_file in glob.glob(os.path.join(data_dir, 'nodes/*.yaml')):
         node_name = os.path.splitext(os.path.basename(node_file))[0]
         nodes_data[node_name] = load_yaml(node_file)
-    
-    # Process all node files to populate hosts
+
     for node_name, node_data in nodes_data.items():
-        # Extract hostname and derive IP from network/host
         hostname = node_data.get('identity', {}).get('hostname')
         network = node_data.get('network')
         host = node_data.get('host')
-        
+
         if hostname and network is not None and host is not None:
-            # Start with a complete copy of all node data
             host_vars = dict(node_data)
-            
-            # Set ansible_user from conceptual admin_user key
+
             host_vars['ansible_user'] = host_vars.get('admin_user', 'root')
-            # Disable privilege escalation because we connect as root
             host_vars['ansible_become'] = False
-            
-            # Derive IP address from network and host IDs
+
             ip = derive_ip_from_network_host(network, host)
-            # Ensure no CIDR suffix leaks into ansible_host
-            ip = ip.split('/')[0]
             host_vars['ip'] = ip
             host_vars['ansible_host'] = ip
-            
-            # Derive network configuration if present
+
             if 'network' in host_vars:
                 host_vars['network_cidr'] = f"10.{network}.0.0/24"
                 host_vars['network_gateway'] = f"10.{network}.0.1"
-            
-            # Process host_services for derived values
+
             if 'host_services' in host_vars:
-                # Process DHCP service
+                # Process DHCP
                 if 'dhcp' in host_vars['host_services']:
                     dhcp_config = host_vars['host_services']['dhcp']
-                    if 'network' in dhcp_config:
-                        dhcp_network = dhcp_config['network']
-                        dhcp_config['subnet'] = f"10.{dhcp_network}.0.0/24"
-                        dhcp_config['range_start'] = f"10.{dhcp_network}.0.{dhcp_config['range_start']}"
-                        dhcp_config['range_end'] = f"10.{dhcp_network}.0.{dhcp_config['range_end']}"
-                        if 'dns_host' in dhcp_config:
-                            dhcp_config['dns_server'] = f"10.{dhcp_network}.0.{dhcp_config['dns_host']}"
-                        
-                        # Process static leases
-                        if 'static_leases' in dhcp_config:
-                            for lease in dhcp_config['static_leases']:
-                                if 'network' in lease and 'host' in lease:
-                                    lease['ip'] = derive_ip_from_network_host(lease['network'], lease['host'])
-                
-                # Process VPN service
+                    dhcp_network = dhcp_config.get('network', network)
+                    dhcp_config['subnet'] = f"10.{dhcp_network}.0.0/24"
+                    dhcp_config['range_start'] = f"10.{dhcp_network}.0.{dhcp_config['range_start']}"
+                    dhcp_config['range_end'] = f"10.{dhcp_network}.0.{dhcp_config['range_end']}"
+                    if 'dns_host' in dhcp_config:
+                        dhcp_config['dns_server'] = derive_ip_from_network_host(
+                            dhcp_network, dhcp_config['dns_host']
+                        )
+                    # Inject static leases from the network definition
+                    vlan_key = f"vlan-{dhcp_network}"
+                    if vlan_key in networks_data:
+                        vlan = networks_data[vlan_key]
+                        if 'static_leases' in vlan:
+                            leases = []
+                            for lease in vlan['static_leases']:
+                                l = dict(lease)
+                                l['ip'] = derive_ip_from_network_host(dhcp_network, l['host'])
+                                leases.append(l)
+                            dhcp_config['static_leases'] = leases
+                    host_vars['host_services']['dhcp'] = dhcp_config
+
+                # Process VPN peers
                 if 'vpn' in host_vars['host_services']:
                     vpn_config = host_vars['host_services']['vpn']
                     if 'peers' in vpn_config:
@@ -208,63 +286,52 @@ def generate_inventory():
                                 peer['extra_ips'] = []
                                 for extra_net in peer['extra_networks']:
                                     if 'network' in extra_net and 'host' in extra_net:
-                                        extra_ip = derive_cidr_from_network_host(extra_net['network'], extra_net['host'])
+                                        extra_ip = derive_cidr_from_network_host(
+                                            extra_net['network'],
+                                            extra_net['host'],
+                                            prefix_len=24
+                                        )
                                         peer['extra_ips'].append(extra_ip)
-            
+
             inventory['all']['hosts'][hostname] = host_vars
-    
-    # Inject global_identities into the 'all' group
+
+    # Global identities
     inventory['all']['vars']['global_identities'] = identities.get('system_accounts', [])
-    
-    # Inject Headscale routing variables if available
-    if headscale_data:
-        inventory['all']['vars']['headscale'] = {
-            'mesh_subnet': headscale_data.get('mesh_subnet'),
-            'mesh_gateway_ip': headscale_data.get('mesh_gateway_ip')
-        }
-    
-    # Inject all top-level environment variables
+
+    # Environment variables
     for key, value in environment.items():
         if key == 'ntp':
-            # Handle NTP specially - extract servers if available
             if isinstance(value, dict) and 'servers' in value:
                 inventory['all']['vars']['ntp_servers'] = value['servers']
         else:
-            # Inject other top-level environment variables directly
             inventory['all']['vars'][key] = value
-    
-    # Aggregate and inject packages
+
+    # Packages
     packages, packages_absent = aggregate_packages(environment, services_data, nodes_data)
     inventory['all']['vars']['packages'] = packages
     inventory['all']['vars']['packages_absent'] = packages_absent
-    
-    
-    # Inject derived networks data for reference
+
+    # Derived networks
     if derived_networks:
         inventory['all']['vars']['networks'] = derived_networks
-    
-    # Process services data for derived values
+
+    # Process and inject services
     processed_services = {}
     for service_name, service_data in services_data.items():
-        processed_service = dict(service_data)
-        
-        # Process Caddy service backends
-        if service_name == 'caddy' and 'services' in processed_service:
-            for caddy_service in processed_service['services']:
-                if 'backend_network' in caddy_service and 'backend_host' in caddy_service:
-                    backend_ip = derive_ip_from_network_host(
-                        caddy_service['backend_network'], 
-                        caddy_service['backend_host']
-                    )
-                    caddy_service['backend'] = f"{backend_ip}:{caddy_service['backend_port']}"
-        
-        processed_services[service_name] = processed_service
-    
-    # Inject processed services data
+        if service_name == 'vpn':
+            processed_services[service_name] = process_vpn_service(service_data)
+        elif service_name == 'headscale':
+            processed_services[service_name] = process_headscale_service(service_data)
+        elif service_name == 'dns':
+            processed_services[service_name] = process_dns_service(service_data)
+        elif service_name == 'caddy':
+            processed_services[service_name] = process_caddy_service(service_data)
+        else:
+            processed_services[service_name] = dict(service_data)
+
     if processed_services:
         inventory['all']['vars']['infra_services'] = processed_services
-    
-    # Write updated inventory
+
     inventory_path = os.path.join(output_dir, 'inventory.yaml')
     with open(inventory_path, 'w') as f:
         yaml.dump(inventory, f, default_flow_style=False, sort_keys=False)
@@ -274,33 +341,29 @@ def generate_known_hosts():
     """Generate ansible/generated/known_hosts from node data."""
     data_dir = "data"
     output_dir = "ansible/generated"
-    
+
     known_hosts_entries = []
-    
-    # Process all node files
+
     for node_file in glob.glob(os.path.join(data_dir, 'nodes/*.yaml')):
         node_data = load_yaml(node_file)
-        
-        # Extract hostname and derive IP
+
         hostname = node_data.get('identity', {}).get('hostname')
         ip = _get_node_ip(node_data)
         host_keys = node_data.get('host_keys', {})
-        
+
         if hostname and ip:
-            # Generate known_hosts entries for each host key type
             for key_type, key_data in host_keys.items():
                 if isinstance(key_data, str):
-                    # Simple string format: host_keys: { ssh-ed25519: "AAAAC3..." }
                     known_hosts_entries.append(f"{hostname},{ip} {key_type} {key_data}")
                 elif isinstance(key_data, dict) and 'key' in key_data:
-                    # Dict format: host_keys: { ssh-ed25519: { key: "AAAAC3...", comment: "..." } }
                     known_hosts_entries.append(f"{hostname},{ip} {key_type} {key_data['key']}")
-            
-            # If no host keys available, add a placeholder comment
+
             if not host_keys:
-                known_hosts_entries.append(f"# {hostname} ({ip}) - No host keys configured")
-    
-    # Write known_hosts file
+                known_hosts_entries.append(
+                    f"# {hostname} ({ip}) - No host keys configured. "
+                    f"Run: ssh-keyscan -t ed25519,rsa {ip}"
+                )
+
     known_hosts_path = os.path.join(output_dir, 'known_hosts')
     with open(known_hosts_path, 'w') as f:
         f.write("# Generated known_hosts file\n")
@@ -313,21 +376,20 @@ def generate_ssh_config():
     """Generate ansible/generated/ssh_config for orchestration client."""
     data_dir = "data"
     output_dir = "ansible/generated"
-    
-    # Load ultra64 node data
+
     ultra64_path = os.path.join(data_dir, 'nodes/ultra64.yaml')
     if os.path.exists(ultra64_path):
         ultra64_data = load_yaml(ultra64_path)
         hostname = ultra64_data.get('identity', {}).get('hostname', 'ultra64')
         ip = _get_node_ip(ultra64_data)
         if ip is None:
-            ip = '0.0.0.0'  # safe fallback if network/host missing
+            ip = '0.0.0.0'
         user = ultra64_data.get('admin_user', 'root')
     else:
         hostname = 'ultra64'
         ip = '0.0.0.0'
         user = 'root'
-    
+
     ssh_config_content = f"""# Generated SSH config for orchestration
 Host {hostname}
     HostName {ip}
@@ -337,8 +399,7 @@ Host {hostname}
     StrictHostKeyChecking no
     PasswordAuthentication no
 """
-    
-    # Write ssh_config file
+
     ssh_config_path = os.path.join(output_dir, 'ssh_config')
     with open(ssh_config_path, 'w') as f:
         f.write(ssh_config_content)
@@ -346,22 +407,21 @@ Host {hostname}
 
 def main():
     """Main compiler function."""
-    # Ensure generated directory exists
     output_dir = "ansible/generated"
     ensure_directory(output_dir)
-    
+
     try:
         print("Generating inventory...")
         generate_inventory()
-        
+
         print("Generating known_hosts...")
         generate_known_hosts()
-        
+
         print("Generating ssh_config...")
         generate_ssh_config()
-        
+
         print("Compilation complete!")
-        
+
     except Exception as e:
         print(f"Error during compilation: {e}", file=sys.stderr)
         sys.exit(1)

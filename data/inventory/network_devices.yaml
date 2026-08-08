@@ -1,28 +1,32 @@
 ---
 devices:
-  - host: "nitro"
+  - hostname: "nitro"
     model: "TP-Link Archer AXE75"
     type: "Wireless Access Point"
     role: "AP / Bridge"
     status: "Operational"
     hw_ver: "v1.0"
     fw_ver: "1.5.3"
-    ip: "10.64.0.3"
+    network: 64
+    host: 3
     mac: "24:2F:D0:D1:2E:30"
-    wan_mac: "24:2F:D0:D1:2E:31"
+    # ⚠️ VERIFY: wan_mac was identical to ultra64 WAN NIC MAC (24:2F:D0:D1:2E:31).
+    # Physically check the WAN port MAC on the TP-Link Archer AXE75 and update.
+    wan_mac: "VERIFY_HARDWARE"
     wifi:
       - ssid: "rsk"
         type: "Private"
         bands: ["2.4GHz", "5GHz", "6GHz"]
         hidden: []
 
-  - host: "nx"
+  - hostname: "nx"
     model: "D-Link DGS-1100-08V2"
     type: "Managed Switch"
     role: "Core Switch"
     status: "Operational"
     hw_ver: "A1"
     fw_ver: "1.00.003"
-    ip: "10.64.0.2"
+    network: 64
+    host: 2
     mac: "88:76:B9:8F:30:E0"
     wifi: []

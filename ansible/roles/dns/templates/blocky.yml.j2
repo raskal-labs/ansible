@@ -13,8 +13,8 @@ blocklist:
 
 customDNS:
   mapping:
-{% for host, ip in infra_services.dns.custom_dns.items() %}
-    '{{ host }}': {{ ip }}
+{% for entry in infra_services.dns.custom_dns %}
+    '{{ entry.hostname }}': {{ entry.ip }}
 {% endfor %}
 
 caching:

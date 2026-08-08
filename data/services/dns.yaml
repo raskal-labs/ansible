@@ -11,12 +11,27 @@ blocklists:
   - https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/tif.txt
   - https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/pro.txt
 custom_dns:
-  'u64.rsk.al': 10.64.0.1
-  'nx.rsk.al': 10.64.0.2
-  'nitro.rsk.al': 10.64.0.3
-  'dol.rsk.al': 10.64.0.4
-  'ca.rsk.al': 10.64.0.1
-  '*.rsk.al': 10.64.0.1
+  - hostname: "u64.rsk.al"
+    network: 64
+    host: 1
+  - hostname: "nx.rsk.al"
+    network: 64
+    host: 2
+  - hostname: "nitro.rsk.al"
+    network: 64
+    host: 3
+  - hostname: "dol.rsk.al"
+    network: 64
+    host: 4
+  - hostname: "ca.rsk.al"
+    network: 64
+    host: 1
+  - hostname: "*.rsk.al"
+    network: 64
+    host: 202
+unbound:
+  chroot: ""
+  do_not_query_localhost: "no"
 caching:
   min_ttl: 60
   max_ttl: 86400
