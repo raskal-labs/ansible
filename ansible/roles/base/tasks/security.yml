@@ -15,6 +15,8 @@
       dhcp: "kea-dhcp4"
       firewall: "nftables"
       headscale: "headscale"
+      caddy: "caddy"
+      step-ca: "step-ca"
 
 - name: Collect host services requiring security profiles
   ansible.builtin.set_fact:

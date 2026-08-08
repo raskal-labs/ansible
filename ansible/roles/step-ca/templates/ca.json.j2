@@ -1,0 +1,9 @@
+{
+  "root": "/etc/step-ca/certs/root_ca.crt",
+  "key": "/etc/step-ca/certs/root_ca.key",
+  "address": "10.{{ infra_services['step-ca'].ca.network }}.0.{{ infra_services['step-ca'].ca.host }}:{{ infra_services['step-ca'].ca.port }}",
+  "dnsNames": ["{{ infra_services['step-ca'].ca.domain }}"],
+  "logger": {
+    "format": "text"
+  }
+}

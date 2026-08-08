@@ -15,14 +15,14 @@ custom_dns:
   'nitro.rsk.al': 10.64.0.3
   'dol.rsk.al': 10.64.0.4
   'ca.rsk.al': 10.64.0.1
-  '*.rsk.al': 10.64.0.202
-  'dns.rsk.al': 10.64.0.202
-  'e-reader.rsk.al': 10.64.0.202
-  'ha.rsk.al': 10.64.0.202
-  'haos.rsk.al': 10.64.0.202
-  'map.rsk.al': 10.64.0.202
-  'auth.rsk.al': 10.64.0.202
-  'ldap.rsk.al': 10.64.0.202
+  '*.rsk.al': 10.64.0.1
+  'dns.rsk.al': 10.64.0.1
+  'e-reader.rsk.al': 10.64.0.1
+  'ha.rsk.al': 10.64.0.1
+  'haos.rsk.al': 10.64.0.1
+  'map.rsk.al': 10.64.0.1
+  'auth.rsk.al': 10.64.0.1
+  'ldap.rsk.al': 10.64.0.1
 caching:
   min_ttl: 60
   max_ttl: 86400

@@ -5,7 +5,6 @@ define VAULT_NET = {{ networks['vlan-64'].cidr }}
 define SANDBOX_NET = 10.32.0.0/24
 define HEADSCALE_NET = 100.64.0.0/24
 define BREAKGLASS_VPN_NET = 100.64.1.0/24
-define CADDY_IP = 10.64.0.4
 
 table inet filter {
     chain input {
@@ -30,6 +29,10 @@ table inet filter {
         
         # Allow ICMP (Ping)
         ip protocol icmp accept
+        
+        # Allow HTTP and HTTPS from WAN and LAN to router itself
+        iifname "{{ interfaces.wan.dev }}" tcp dport { 80, 443 } accept
+        iifname "{{ interfaces.lan.dev }}" tcp dport { 80, 443 } accept
         
         # Allow incoming VPN handshake on WAN
         iifname "{{ interfaces.wan.dev }}" udp dport {{ host_services.vpn.port | default(51820) }} accept
@@ -65,13 +68,6 @@ table inet filter {
 }
 
 table ip nat {
-    chain prerouting {
-        type nat hook prerouting priority dstnat; policy accept;
-        
-        # Forward HTTP/HTTPS traffic from WAN to Caddy reverse proxy
-        iifname "{{ interfaces.wan.dev }}" tcp dport { 80, 443 } dnat to $CADDY_IP
-    }
-    
     chain postrouting {
         type nat hook postrouting priority srcnat; policy accept;
         
