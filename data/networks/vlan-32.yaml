@@ -3,3 +3,11 @@ id: vlan-32
 type: network
 network: 32
 gateway_host: 1
+netmask: "255.255.255.0"
+interface: "eth1.32"
+dns:
+  - "1.1.1.1"
+  - "8.8.8.8"
+dhcp_range:
+  start: "10.32.0.50"
+  end: "10.32.0.250"
