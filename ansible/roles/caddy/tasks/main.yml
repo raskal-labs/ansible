@@ -1,0 +1,26 @@
+---
+- name: Ensure /etc/caddy directory exists
+  ansible.builtin.file:
+    path: /etc/caddy
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Deploy Caddyfile
+  ansible.builtin.template:
+    src: Caddyfile.j2
+    dest: /etc/caddy/Caddyfile
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Reload caddy
+
+- name: Flush handlers to reload Caddy if changed
+  ansible.builtin.meta: flush_handlers
+
+- name: Ensure Caddy service is started and enabled
+  ansible.builtin.systemd:
+    name: caddy
+    state: started
+    enabled: yes

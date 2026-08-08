@@ -38,6 +38,10 @@
             name: vpn
         - ansible.builtin.import_role:
             name: avahi
+        - ansible.builtin.import_role:
+            name: step-ca
+        - ansible.builtin.import_role:
+            name: caddy
       when: profile is defined and profile == 'router'
 
   handlers:

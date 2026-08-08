@@ -1,0 +1,7 @@
+{# Baseline Caddy configuration generated from SoT #}
+{% set caddy_services = infra_services.caddy.services | default([]) %}
+{% for svc in caddy_services %}
+{{ svc.domain }} {
+    reverse_proxy {{ svc.upstream }}
+}
+{% endfor %}
