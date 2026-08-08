@@ -3,7 +3,7 @@ flush ruleset
 # Define network variables
 define VAULT_NET = {{ networks['vlan-64'].cidr }}
 define SANDBOX_NET = 10.32.0.0/24
-define HEADSCALE_NET = 100.64.0.0/24
+define HEADSCALE_NET = {{ infra_services.headscale.mesh_subnet }}
 define BREAKGLASS_VPN_NET = 100.64.1.0/24
 
 table inet filter {
@@ -36,6 +36,9 @@ table inet filter {
         
         # Allow incoming VPN handshake on WAN
         iifname "{{ interfaces.wan.dev }}" udp dport {{ host_services.vpn.port | default(51820) }} accept
+
+        # Allow Headscale DERP STUN traffic
+        iifname "{{ interfaces.wan.dev }}" udp dport {{ infra_services.headscale.derp.port }} accept
     }
 
     chain forward {
