@@ -1,13 +1,8 @@
 ---
 id: step-ca
-security_profile: strict
 packages:
   - step-cli
   - step-ca
-ca:
-  name: "Sovereign Seal of Rascality and Rascalry"
-  signer: "raskal-labs"
-  domain: "ca.rsk.al"
-  network: 64
-  host: 1
-  port: 8443
+port: 9000
+domain: ca.rsk.al
+name: Step Online CA
