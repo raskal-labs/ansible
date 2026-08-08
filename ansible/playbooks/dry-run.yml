@@ -1,0 +1,133 @@
+---
+# Dry-run playbook for validating against a new/unconfigured machine.
+#
+# Usage:
+#   ansible-playbook ansible/playbooks/dry-run.yml \
+#     -i ansible/generated/inventory.yaml \
+#     --limit ultra64
+#
+# What this does:
+#   - Runs the full site playbook in check + diff mode
+#   - Sets dry_run=true so handlers and service-state tasks are skipped
+#   - Uses ignore_errors per role so one missing dep does not abort the run
+#   - Produces a full diff of every template that would be rendered
+#
+# What this does NOT do:
+#   - Does not install any packages
+#   - Does not start, stop, or restart any services
+#   - Does not modify any files on the target machine
+#   - Does not flush or apply any firewall rules
+
+- name: Dry Run — Full Infrastructure Validation
+  hosts: all
+  become: true
+  check_mode: true
+
+  vars:
+    dry_run: true
+    min_ansible_version: "2.14.0"
+
+  tasks:
+    - name: Ensure Ansible version requirement
+      ansible.builtin.assert:
+        that:
+          - ansible_version.full is version(min_ansible_version, '>=')
+
+    - name: "[DRY RUN] Log playbook execution start"
+      ansible.builtin.debug:
+        msg: "DRY RUN: Would log infrastructure playbook start to system journal."
+
+    - name: "[DRY RUN] Apply Universal Foundation"
+      ansible.builtin.import_role:
+        name: base
+      ignore_errors: true
+
+    - name: "[DRY RUN] Apply Time Synchronization"
+      ansible.builtin.import_role:
+        name: chrony
+      ignore_errors: true
+
+    - name: "[DRY RUN] Apply Router Roles"
+      block:
+        - ansible.builtin.import_role:
+            name: network
+          ignore_errors: true
+
+        - ansible.builtin.import_role:
+            name: firewall
+          ignore_errors: true
+
+        - ansible.builtin.import_role:
+            name: dns
+          ignore_errors: true
+
+        - ansible.builtin.import_role:
+            name: dhcp
+          ignore_errors: true
+
+        - ansible.builtin.import_role:
+            name: vpn
+          ignore_errors: true
+
+        - ansible.builtin.import_role:
+            name: headscale
+          ignore_errors: true
+
+        - ansible.builtin.import_role:
+            name: crowdsec
+          ignore_errors: true
+
+        - ansible.builtin.import_role:
+            name: avahi
+          ignore_errors: true
+
+        - ansible.builtin.import_role:
+            name: step-ca
+          ignore_errors: true
+
+        - ansible.builtin.import_role:
+            name: caddy
+          ignore_errors: true
+
+      when: profile is defined and profile == 'router'
+
+  handlers:
+    - name: Apply sysctl configuration
+      ansible.builtin.debug:
+        msg: "[DRY RUN] Would run: sysctl --system"
+
+    - name: Reload systemd daemon
+      ansible.builtin.debug:
+        msg: "[DRY RUN] Would run: systemctl daemon-reload"
+
+    - name: Regenerate GRUB config
+      ansible.builtin.debug:
+        msg: "[DRY RUN] Would run: grub2-mkconfig -o /boot/grub2/grub.cfg"
+
+    - name: Reload udev rules
+      ansible.builtin.debug:
+        msg: "[DRY RUN] Would run: udevadm control --reload-rules && udevadm trigger"
+
+    - name: Restart nftables
+      ansible.builtin.debug:
+        msg: "[DRY RUN] Would run: systemctl restart nftables"
+
+    - name: Restart kea-dhcp4
+      ansible.builtin.debug:
+        msg: "[DRY RUN] Would run: systemctl restart kea-dhcp4"
+
+    - name: Restart wg-quick@wg0
+      ansible.builtin.debug:
+        msg: "[DRY RUN] Would run: systemctl restart wg-quick@wg0"
+
+    - name: Restart headscale
+      ansible.builtin.debug:
+        msg: "[DRY RUN] Would run: systemctl restart headscale"
+
+    - name: Restart crowdsec
+      ansible.builtin.debug:
+        msg: "[DRY RUN] Would run: systemctl restart crowdsec"
+
+    - name: Restart crowdsec-firewall-bouncer
+      ansible.builtin.debug:
+        msg: "[DRY RUN] Would run: systemctl restart crowdsec-firewall-bouncer"

@@ -1,0 +1,44 @@
+---
+- name: Install Headscale package
+  ansible.builtin.package:
+    name: headscale
+    state: present
+
+- name: Create Headscale config directory
+  ansible.builtin.file:
+    path: /etc/headscale
+    state: directory
+    owner: headscale
+    group: headscale
+    mode: '0750'
+
+- name: Create Headscale data directory
+  ansible.builtin.file:
+    path: /var/lib/headscale
+    state: directory
+    owner: headscale
+    group: headscale
+    mode: '0750'
+
+- name: Create Headscale DB backup directory
+  ansible.builtin.file:
+    path: "{{ infra_services.headscale.state.db_backup_path }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0700'
+
+- name: Deploy Headscale configuration
+  ansible.builtin.template:
+    src: headscale.yaml.j2
+    dest: /etc/headscale/config.yaml
+    owner: headscale
+    group: headscale
+    mode: '0640'
+  notify: Restart headscale
+
+- name: Enable and start Headscale service
+  ansible.builtin.systemd:
+    name: headscale
+    state: started
+    enabled: true

@@ -44,6 +44,8 @@
         - ansible.builtin.import_role:
             name: vpn
         - ansible.builtin.import_role:
+            name: headscale
+        - ansible.builtin.import_role:
             name: crowdsec
         - ansible.builtin.import_role:
             name: avahi
@@ -85,6 +87,20 @@
       ansible.builtin.systemd:
         name: kea-dhcp4
         state: restarted
+      when: not (dry_run | bool)
+
+    - name: Restart wg-quick@wg0
+      ansible.builtin.systemd:
+        name: wg-quick@wg0
+        state: restarted
+        enabled: true
+      when: not (dry_run | bool)
+
+    - name: Restart headscale
+      ansible.builtin.systemd:
+        name: headscale
+        state: restarted
+        enabled: true
       when: not (dry_run | bool)
 
     - name: Restart crowdsec

@@ -17,7 +17,7 @@
 #   make vault-rekey              Rekey the vault with a new password
 #   make snapshot                 Save a snapshot of the current inventory
 #   make restore                  Restore inventory from snapshot and deploy
-#   make headscale-backup         Back up Headscale DB on gamecube
+#   make headscale-backup         Back up Headscale DB on ultra64
 #   make headscale-nodes          List enrolled Headscale nodes
 #   make headscale-key            Generate a new Headscale pre-auth key
 #   make clean                    Remove all generated files (keeps .gitkeep)
@@ -42,11 +42,11 @@ ANSIBLE_CFG      := ansible/ansible.cfg
 # --- Target host (override with: make deploy HOST=somehost) ---
 HOST             := ultra64
 
-# --- Router IP ---
+# --- Router IP (ultra64 — also runs Headscale) ---
 ROUTER_IP        := 10.64.0.1
 
-# --- Headscale host (gamecube) ---
-HEADSCALE_HOST   := 10.64.0.4
+# --- Headscale runs on ultra64 (the router) ---
+HEADSCALE_HOST   := 10.64.0.1
 HEADSCALE_USER   := raskal
 
 export ANSIBLE_CONFIG := $(ANSIBLE_CFG)
@@ -211,9 +211,10 @@ restore: check-tools
 
 # =============================================================================
 # HEADSCALE OPERATIONS
+# Headscale runs on ultra64 (the router, 10.64.0.1).
 # =============================================================================
 headscale-backup:
-	@echo "==> [HEADSCALE] Backing up Headscale DB on gamecube ($(HEADSCALE_HOST))..."
+	@echo "==> [HEADSCALE] Backing up Headscale DB on ultra64 ($(HEADSCALE_HOST))..."
 	@ssh root@$(HEADSCALE_HOST) \
 		"mkdir -p /root/headscale-db-backups && \
 		 cp /var/lib/headscale/db.sqlite \
@@ -291,8 +292,8 @@ help:
 	@echo "    make vault-edit               Edit vault.yml"
 	@echo "    make vault-rekey              Rekey vault with new password"
 	@echo ""
-	@echo "  Headscale:"
-	@echo "    make headscale-backup         Back up Headscale DB on gamecube"
+	@echo "  Headscale (runs on ultra64 — the router):"
+	@echo "    make headscale-backup         Back up Headscale DB on ultra64"
 	@echo "    make headscale-nodes          List all enrolled nodes"
 	@echo "    make headscale-key            Generate a new pre-auth key"
 	@echo "      HEADSCALE_USER=<user>       Override user (default: raskal)"
@@ -311,6 +312,6 @@ help:
 	@echo "    5.  make dry-run              Verify all templates render"
 	@echo "    6.  make deploy               Apply to router"
 	@echo ""
-	@echo "  Before any gamecube maintenance:"
-	@echo "    make headscale-backup         Always back up before touching gamecube"
+	@echo "  Before any ultra64 OS-level maintenance:"
+	@echo "    make headscale-backup         Always back up Headscale DB first"
 	@echo ""

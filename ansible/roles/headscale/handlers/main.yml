@@ -1,0 +1,7 @@
+---
+- name: Restart headscale
+  ansible.builtin.systemd:
+    name: headscale
+    state: restarted
+    enabled: true
+  when: not (dry_run | bool)
