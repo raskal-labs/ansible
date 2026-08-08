@@ -1,4 +1,3 @@
-git rm --cached ansible/.vault_pass
-git commit -m "security: stop tracking vault password file"
-python3 compile.py
-python3 tools/validate_yaml.py
+make compile
+make validate
+make dry-run

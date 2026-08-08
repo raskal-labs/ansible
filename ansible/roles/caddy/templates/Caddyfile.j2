@@ -30,7 +30,7 @@
 # ====================================================================
 {% for name, profile in infra_services.caddy.auth_profiles.items() %}
 ({{ name }}) {
-    forward_auth 10.{{ profile.backend_network }}.0.{{ profile.backend_host }}:{{ profile.backend_port }} {
+    forward_auth {{ profile.backend }} {
         uri {{ profile.uri }}
         copy_headers Remote-User Remote-Groups Remote-Name Remote-Email
     }
@@ -68,7 +68,7 @@
 
     {% elif svc.action | default('reverse_proxy') == 'doh_public' %}
     handle /dns-query* {
-        reverse_proxy 10.{{ svc.backend_network }}.0.{{ svc.backend_host }}:{{ svc.backend_port }} {
+        reverse_proxy {{ svc.backend }} {
             header_up Host {host}
             header_up X-Real-IP {client_ip}
             header_up X-Forwarded-For {client_ip}
@@ -80,7 +80,7 @@
 
     {% elif svc.action | default('reverse_proxy') == 'doh_internal' %}
     handle /dns-query {
-        reverse_proxy 10.{{ svc.backend_network }}.0.{{ svc.backend_host }}:{{ svc.backend_port }} {
+        reverse_proxy {{ svc.backend }} {
             header_up Host {host}
             header_up X-Real-IP {client_ip}
             header_up X-Forwarded-For {client_ip}
@@ -91,8 +91,7 @@
     }
 
     {% else %}
-    {# default reverse_proxy #}
-    reverse_proxy {% if svc.tls_insecure_skip_verify | default(false) %}https://{% endif %}10.{{ svc.backend_network }}.0.{{ svc.backend_host }}:{{ svc.backend_port }} {
+    reverse_proxy {% if svc.tls_insecure_skip_verify | default(false) %}https://{% endif %}{{ svc.backend }} {
         {% if svc.tls_insecure_skip_verify | default(false) %}
         transport http {
             tls_insecure_skip_verify
