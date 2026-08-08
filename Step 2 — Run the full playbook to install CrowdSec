@@ -1,0 +1,4 @@
+ansible-playbook ansible/site.yml \
+  -i ansible/generated/inventory.yaml \
+  --limit ultra64 \
+  --vault-password-file ansible/.vault_pass
