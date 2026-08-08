@@ -84,7 +84,6 @@ packages_absent:
   - firewalld
   - netbird
   - systemd-resolved
-  - unbound
   - dnscrypt-proxy
 
 host_keys:

@@ -1,0 +1,10 @@
+---
+- name: Reload systemd daemon
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Restart kea-dhcp4
+  ansible.builtin.systemd:
+    name: kea-dhcp4
+    state: restarted
+  failed_when: ansible_check_mode
