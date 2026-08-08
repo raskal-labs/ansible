@@ -1,0 +1,7 @@
+---
+# DHCP policy index — subnet data lives in each vlan-*.yaml file
+# Enforces the Two-Bucket Subnet and .100 Split
+
+vlans:
+  - vlan-64
+  - vlan-32
