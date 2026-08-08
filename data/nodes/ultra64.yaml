@@ -40,22 +40,11 @@ interfaces:
 
 host_services:
   dhcp:
-    security_profile: hardened
     network: 64
     range_start: 100
     range_end: 200
     dns_host: 1
-    static_leases:
-    - hostname: nitro
-      network: 64
-      host: 3
-      mac: 24:2F:D0:D1:2E:30
-    - hostname: nx
-      network: 64
-      host: 2
-      mac: 88:76:B9:8F:30:E0
   vpn:
-    security_profile: strict
     port: 51820
     privkey: "{{ vault_wg_ultra64_private_key }}"
     host_id: 1
@@ -86,6 +75,11 @@ packages_absent:
   - systemd-resolved
   - dnscrypt-proxy
 
-host_keys:
-  ssh-ed25519: "AAAAC3NzaC1lZDI1NTE5AAAAIExample_ED25519_HOST_KEY_ultra64"
-  ssh-rsa: "AAAAB3NzaC1yc2EAAAADAQABAAABgQExample_RSA_HOST_KEY_ultra64"
+# host_keys intentionally omitted until real keys are captured.
+# To populate, run on your workstation:
+#   ssh-keyscan -t ed25519,rsa 10.64.0.1
+# Then add the keys here:
+# host_keys:
+#   ssh-ed25519: "AAAAC3Nz..."
+#   ssh-rsa: "AAAAB3Nz..."
+# Then re-run: python3 compile.py

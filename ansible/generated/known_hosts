@@ -1,4 +1,6 @@
 # Generated known_hosts file
 # Host keys are automatically populated from node data
-ultra64,10.64.0.1 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIExample_ED25519_HOST_KEY_ultra64
-ultra64,10.64.0.1 ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQExample_RSA_HOST_KEY_ultra64
+# ultra64 (10.64.0.1) - Real host keys not yet populated.
+# Run: ssh-keyscan -t ed25519,rsa 10.64.0.1
+# Then update data/nodes/ultra64.yaml host_keys with the output,
+# and re-run: python3 compile.py
