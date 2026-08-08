@@ -8,7 +8,7 @@
     mode: '0644'
   loop:
     - { src: 'unbound.conf.j2', dest: '/etc/unbound/unbound.conf', svc: 'unbound' }
-    - { src: 'dnscrypt-proxy.toml.j2', dest: '/etc/dnscrypt-proxy/dnscrypt-proxy.toml', svc: 'dnscrypt-proxy' }
+    - { src: 'blocky.yml.j2', dest: '/etc/blocky/blocky.yml', svc: 'blocky' }
   notify: "Restart {{ item.svc }}"
 
 - name: Create systemd override directories
@@ -20,7 +20,7 @@
     mode: '0755'
   loop:
     - unbound
-    - dnscrypt-proxy
+    - blocky
 
 - name: Deploy systemd overrides
   ansible.builtin.template:
@@ -31,7 +31,7 @@
     mode: '0644'
   loop:
     - unbound
-    - dnscrypt-proxy
+    - blocky
   notify:
     - Reload systemd daemon
     - "Restart {{ item }}"
@@ -45,7 +45,7 @@
     state: started
     enabled: true
   loop:
-    - dnscrypt-proxy
+    - blocky
     - unbound
 
 - name: Verify local DNS lookup before resolv.conf update
