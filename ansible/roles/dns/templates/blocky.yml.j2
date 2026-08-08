@@ -2,6 +2,9 @@ upstream:
   default:
     - 127.0.0.1:5335
 
+port: 53
+httpPort: 0
+
 blocklist:
   sources:
 {% for url in infra_services.dns.blocklists %}
