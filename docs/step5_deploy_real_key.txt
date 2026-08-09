@@ -1,3 +1,5 @@
+# Original Filename: Step 5 — Re-run just the crowdsec role to deploy the real key
+
 ansible-playbook ansible/site.yml \
   -i ansible/generated/inventory.yaml \
   --limit ultra64 \

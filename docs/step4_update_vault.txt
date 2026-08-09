@@ -1,3 +1,5 @@
+# Original Filename: Step 4 — Update the vault with the real key
+
 cd ansible
 ansible-vault edit group_vars/all/vault.yml --vault-password-file .vault_pass
 # Replace PLACEHOLDER_run_cscli_after_install with the real key

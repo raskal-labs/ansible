@@ -36,30 +36,35 @@ all:
         wan:
           dev: enp1s0f0
           mac: 24:2F:D0:D1:2E:31
+          factory_mac: 00:24:81:81:e0:e4
         lan:
           dev: enp1s0f1
       host_services:
         dhcp:
-          security_profile: hardened
           network: 64
           range_start: 10.64.0.100
           range_end: 10.64.0.200
           dns_host: 1
-          static_leases:
-          - hostname: nitro
-            network: 64
-            host: 3
-            mac: 24:2F:D0:D1:2E:30
-            ip: 10.64.0.3
-          - hostname: nx
-            network: 64
-            host: 2
-            mac: 88:76:B9:8F:30:E0
-            ip: 10.64.0.2
           subnet: 10.64.0.0/24
           dns_server: 10.64.0.1
+          static_leases:
+          - hostname: nx
+            mac: 88:76:B9:8F:30:E0
+            host: 2
+            ip: 10.64.0.2
+          - hostname: nitro
+            mac: 24:2F:D0:D1:2E:30
+            host: 3
+            ip: 10.64.0.3
+          - hostname: gamecube
+            mac: 84:47:09:44:8B:F9
+            host: 4
+            ip: 10.64.0.4
+          - hostname: pi-auditor
+            mac: 74:A7:EA:EE:67:ED
+            host: 10
+            ip: 10.64.0.10
         vpn:
-          security_profile: strict
           port: 51820
           privkey: '{{ vault_wg_ultra64_private_key }}'
           host_id: 1
@@ -90,8 +95,8 @@ all:
       - systemd-resolved
       - dnscrypt-proxy
       host_keys:
-        ssh-ed25519: AAAAC3NzaC1lZDI1NTE5AAAAIExample_ED25519_HOST_KEY_ultra64
-        ssh-rsa: AAAAB3NzaC1yc2EAAAADAQABAAABgQExample_RSA_HOST_KEY_ultra64
+        ssh-ed25519: AAAAC3NzaC1lZDI1NTE5AAAAIHkYRIFo0ahYGuBY1pMahq3IFOZSQHzb1287Aj5Rc2Eg
+        ssh-rsa: AAAAB3NzaC1yc2EAAAADAQABAAABgQCy30/KmutLk1W5s6YwsXkDdMFcGQlEeqxllDGBsR84C0BmFIkH04J8pN5wdxgddHE/ZsmayOrZIBNRjo5+y9LljOj+TkCIchKtRr+JtmkwiumSmiEJMSLzrX+SOzU7+b/QFCqdS8FamflXKjILtPfzRitFM2LAs3Z+pcEwyWcZ+cSUCP1zDnuDa5RCO/6LTd37Wvfvm0LVP9Z4f6aEkAUr4kTsYiVzE+81NZw6USjGcTapQilw9qzalRcwjsN/5a87/sVL/KzLNLeQw2h3hDO2wEZJ7/PSCWKAGNKmBVAxCZRwYXybPY35AZHKMwL0Ic82Aeic02PVIYTpVInzNOvwgs4iSWIzh1FemiL+Hmf9Yc5XHInj1CQUarU0a0IByBSLu8xSWjc3xeWhZyWyJ6LdmdQUc5WgRiEs7q91goCc71aiRfrhiM2qmcUjalZ/kK+9dontEdimaUlWfdv6YqfnBz86cmbdLsVVx4MwmIyu3esTDSaXNvjWolzaXPigMiM=
       ansible_user: root
       ansible_become: false
       ip: 10.64.0.1
@@ -116,9 +121,6 @@ all:
       - name: raskal@aider-node
         key: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBzccYlHTg5Qj5QgF13+C+Lc0XqpfA8A/v425nrYz60w
           labs@raskal.io
-    headscale:
-      mesh_subnet: 100.64.0.0/24
-      mesh_gateway_ip: 10.64.0.4
     repo: '{{ playbook_dir | dirname }}'
     paths:
       etc: /etc
@@ -150,6 +152,7 @@ all:
     - curl
     - ethtool
     - git
+    - headscale
     - htop
     - iftop
     - ipcalc
@@ -162,6 +165,8 @@ all:
     - nload
     - nmap
     - socat
+    - step-ca
+    - step-cli
     - tcpdump
     - tmux
     - traceroute
@@ -183,6 +188,7 @@ all:
       vlan-64:
         id: vlan-64
         network: 64
+        prefix_len: 24
         cidr: 10.64.0.0/24
         gateway: 10.64.0.1
         subnet_mask: 255.255.255.0
@@ -191,6 +197,7 @@ all:
       vlan-32:
         id: vlan-32
         network: 32
+        prefix_len: 24
         cidr: 10.32.0.0/24
         gateway: 10.32.0.1
         subnet_mask: 255.255.255.0
@@ -202,33 +209,184 @@ all:
         security_profile: hardened
         packages:
         - caddy
+        email: labs@raskal.io
+        tls_profiles:
+          sovereign_tls:
+            type: acme
+            endpoint: https://ca.rsk.al:9000/acme/acme/directory
+            trusted_roots: /etc/step-ca/certs/root_ca.crt
+        auth_profiles:
+          auth_gate:
+            backend_network: 64
+            backend_host: 203
+            backend_port: 9091
+            uri: /api/authz/forward-auth?authelia_url=https://auth.rsk.al/
+            backend: 10.64.0.203:9091
+          auth_gate_public:
+            backend_network: 64
+            backend_host: 203
+            backend_port: 9091
+            uri: /api/authz/forward-auth?authelia_url=https://auth.raskal.io/
+            backend: 10.64.0.203:9091
         services:
-        - name: apex
-          domain: raskal.io
-          backend_node: TBD
+        - name: homeassistant_wan
+          domains:
+          - haos.raskal.io
+          - ha.raskal.io
+          backend_network: 64
+          backend_host: 233
+          backend_port: 8123
+          backend: 10.64.0.233:8123
+        - name: dawarich_wan
+          domains:
+          - map.raskal.io
+          backend_network: 64
+          backend_host: 204
+          backend_port: 3000
+          backend: 10.64.0.204:3000
+        - name: copyparty_wan
+          domains:
+          - pc.raskal.io
+          auth: auth_gate_public
+          backend_network: 64
+          backend_host: 237
+          backend_port: 3923
+          backend: 10.64.0.237:3923
+        - name: proxmox_wan
+          domains:
+          - gcn.raskal.io
+          - gamecube.raskal.io
+          backend_network: 64
+          backend_host: 4
+          backend_port: 8006
+          tls_insecure_skip_verify: true
+          backend: 10.64.0.4:8006
+        - name: dns_wan
+          domains:
+          - dns.raskal.io
+          action: doh_public
+          backend_network: 64
+          backend_host: 1
+          backend_port: 4000
+          backend: 10.64.0.1:4000
+        - name: headscale_wan
+          domains:
+          - wfc.raskal.io
+          action: headscale
+          backend: 127.0.0.1:8080
+        - name: auth_wan
+          domains:
+          - auth.raskal.io
+          backend_network: 64
+          backend_host: 203
+          backend_port: 9091
+          backend: 10.64.0.203:9091
+        - name: pairdrop_wan
+          domains:
+          - zapper.raskal.io
+          backend_network: 64
+          backend_host: 232
+          backend_port: 3000
+          backend: 10.64.0.232:3000
+        - name: auth_lan
+          domains:
+          - auth.rsk.al
+          tls: sovereign_tls
+          backend_network: 64
+          backend_host: 203
+          backend_port: 9091
+          backend: 10.64.0.203:9091
+        - name: ldap_lan
+          domains:
+          - ldap.rsk.al
+          tls: sovereign_tls
+          backend_network: 64
+          backend_host: 203
+          backend_port: 17170
+          backend: 10.64.0.203:17170
+        - name: dns_lan
+          domains:
+          - dns.rsk.al
+          tls: sovereign_tls
+          action: doh_internal
+          backend_network: 64
+          backend_host: 1
+          backend_port: 4000
+          backend: 10.64.0.1:4000
+        - name: homeassistant_lan
+          domains:
+          - ha.rsk.al
+          - haos.rsk.al
+          tls: sovereign_tls
+          backend_network: 64
+          backend_host: 233
+          backend_port: 8123
+          backend: 10.64.0.233:8123
+        - name: proxmox_lan
+          domains:
+          - pve.rsk.al
+          - gcn.rsk.al
+          - gamecube.rsk.al
+          tls: sovereign_tls
+          backend_network: 64
+          backend_host: 4
+          backend_port: 8006
+          tls_insecure_skip_verify: true
+          backend: 10.64.0.4:8006
+        - name: dawarich_lan
+          domains:
+          - map.rsk.al
+          tls: sovereign_tls
+          action: redir
+          redir_target: https://map.raskal.io{uri}
+        - name: copyparty_lan
+          domains:
+          - pc.rsk.al
+          tls: sovereign_tls
+          auth: auth_gate
+          backend_network: 64
+          backend_host: 237
+          backend_port: 3923
+          backend: 10.64.0.237:3923
+        - name: pairdrop_lan
+          domains:
+          - zapper.rsk.al
+          tls: sovereign_tls
+          backend_network: 64
+          backend_host: 232
+          backend_port: 3000
+          backend: 10.64.0.232:3000
+        - name: nitro
+          domains:
+          - ntr.rsk.al
+          tls: sovereign_tls
+          backend_network: 64
+          backend_host: 3
           backend_port: 80
-          auth_mode: native_oidc
-        - name: proxmox_main
-          domain: gamecube.rsk.al
+          backend: 10.64.0.3:80
+        - name: ultra64
+          domains:
+          - u64.rsk.al
+          tls: sovereign_tls
+          action: respond
+          response_msg: '[REDACTED]-labs'
+          response_code: 200
+        - name: nx
+          domains:
+          - nx.rsk.al
+          tls: sovereign_tls
+          backend_network: 64
+          backend_host: 2
+          backend_port: 80
+          backend: 10.64.0.2:80
+        - name: dolphin
+          domains:
+          - dol.rsk.al
+          tls: sovereign_tls
           backend_network: 64
           backend_host: 4
-          backend_port: 8006
-          auth_mode: internal_only
-          backend: 10.64.0.4:8006
-        - name: proxmox_alias
-          domain: gcn.rsk.al
-          backend_network: 64
-          backend_host: 4
-          backend_port: 8006
-          auth_mode: internal_only
-          backend: 10.64.0.4:8006
-        - name: proxmox_public
-          domain: gamecube.raskal.io
-          backend_network: 64
-          backend_host: 4
-          backend_port: 8006
-          auth_mode: native_oidc
-          backend: 10.64.0.4:8006
+          backend_port: 80
+          backend: 10.64.0.4:80
       firewall:
         id: firewall
         security_profile: strict
@@ -241,13 +399,38 @@ all:
         id: headscale
         security_profile: hardened
         mesh_subnet: 100.64.0.0/24
+        mesh_gateway_network: 64
+        mesh_gateway_host: 4
+        derp:
+          port: 3478
+        server:
+          host_network: 64
+          host: 1
+          grpc_port: 50443
+          metrics_port: 9090
+          db_path: /var/lib/headscale/db.sqlite
+        packages:
+        - headscale
+        templates:
+        - source: headscale.yaml.j2
+          destination: /etc/headscale/config.yaml
+        state:
+          db_backup_path: /root/headscale-db-backups/
+        description: 'Headscale self-hosted VPN mesh coordination server. Runs on
+          ultra64 (the router, 10.64.0.1). Exposes the coordination endpoint wfc.raskal.io
+          via Caddy reverse proxy on the same host. DERP/STUN traffic is forwarded
+          directly on UDP 3478. gamecube (10.64.0.4) acts as the mesh exit node /
+          subnet router within the Headscale mesh, but does NOT run the server. Clients
+          enroll using: tailscale up --login-server https://wfc.raskal.io
+
+          '
         mesh_gateway_ip: 10.64.0.4
-        description: Headscale VPN mesh coordination service
       dns:
         id: dns
         packages:
         - unbound
         - blocky
+        http_port: 4000
         blocklists:
         - https://adguardteam.github.io/HostlistsRegistry/assets/filter_1.txt
         - https://adguardteam.github.io/HostlistsRegistry/assets/filter_2.txt
@@ -255,19 +438,33 @@ all:
         - https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/tif.txt
         - https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/pro.txt
         custom_dns:
-          u64.rsk.al: 10.64.0.1
-          nx.rsk.al: 10.64.0.2
-          nitro.rsk.al: 10.64.0.3
-          dol.rsk.al: 10.64.0.4
-          ca.rsk.al: 10.64.0.1
-          '*.rsk.al': 10.64.0.202
-          dns.rsk.al: 10.64.0.202
-          e-reader.rsk.al: 10.64.0.202
-          ha.rsk.al: 10.64.0.202
-          haos.rsk.al: 10.64.0.202
-          map.rsk.al: 10.64.0.202
-          auth.rsk.al: 10.64.0.202
-          ldap.rsk.al: 10.64.0.202
+        - hostname: u64.rsk.al
+          network: 64
+          host: 1
+          ip: 10.64.0.1
+        - hostname: nx.rsk.al
+          network: 64
+          host: 2
+          ip: 10.64.0.2
+        - hostname: nitro.rsk.al
+          network: 64
+          host: 3
+          ip: 10.64.0.3
+        - hostname: dol.rsk.al
+          network: 64
+          host: 4
+          ip: 10.64.0.4
+        - hostname: ca.rsk.al
+          network: 64
+          host: 1
+          ip: 10.64.0.1
+        - hostname: '*.rsk.al'
+          network: 64
+          host: 202
+          ip: 10.64.0.202
+        unbound:
+          chroot: ''
+          do_not_query_localhost: 'no'
         caching:
           min_ttl: 60
           max_ttl: 86400
@@ -292,13 +489,22 @@ all:
         templates:
         - source: avahi-daemon.conf.j2
           destination: /etc/avahi/avahi-daemon.conf
+      step-ca:
+        id: step-ca
+        packages:
+        - step-cli
+        - step-ca
+        port: 9000
+        domain: ca.rsk.al
+        name: Step Online CA
       vpn:
         id: vpn
         security_profile: strict
         prefix: 100.64.1
-        cidr: 100.64.1.0/24
+        prefix_len: 24
         packages:
         - wireguard-tools
         templates:
         - source: wg0.conf.j2
           destination: /etc/wireguard/wg0.conf
+        cidr: 100.64.1.0/24

@@ -1,6 +1,4 @@
 # Generated known_hosts file
 # Host keys are automatically populated from node data
-# ultra64 (10.64.0.1) - Real host keys not yet populated.
-# Run: ssh-keyscan -t ed25519,rsa 10.64.0.1
-# Then update data/nodes/ultra64.yaml host_keys with the output,
-# and re-run: python3 compile.py
+ultra64,10.64.0.1 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHkYRIFo0ahYGuBY1pMahq3IFOZSQHzb1287Aj5Rc2Eg
+ultra64,10.64.0.1 ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCy30/KmutLk1W5s6YwsXkDdMFcGQlEeqxllDGBsR84C0BmFIkH04J8pN5wdxgddHE/ZsmayOrZIBNRjo5+y9LljOj+TkCIchKtRr+JtmkwiumSmiEJMSLzrX+SOzU7+b/QFCqdS8FamflXKjILtPfzRitFM2LAs3Z+pcEwyWcZ+cSUCP1zDnuDa5RCO/6LTd37Wvfvm0LVP9Z4f6aEkAUr4kTsYiVzE+81NZw6USjGcTapQilw9qzalRcwjsN/5a87/sVL/KzLNLeQw2h3hDO2wEZJ7/PSCWKAGNKmBVAxCZRwYXybPY35AZHKMwL0Ic82Aeic02PVIYTpVInzNOvwgs4iSWIzh1FemiL+Hmf9Yc5XHInj1CQUarU0a0IByBSLu8xSWjc3xeWhZyWyJ6LdmdQUc5WgRiEs7q91goCc71aiRfrhiM2qmcUjalZ/kK+9dontEdimaUlWfdv6YqfnBz86cmbdLsVVx4MwmIyu3esTDSaXNvjWolzaXPigMiM=

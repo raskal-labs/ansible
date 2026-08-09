@@ -10,9 +10,8 @@ devices:
     network: 64
     host: 3
     mac: "24:2F:D0:D1:2E:30"
-    # ⚠️ VERIFY: wan_mac was identical to ultra64 WAN NIC MAC (24:2F:D0:D1:2E:31).
-    # Physically check the WAN port MAC on the TP-Link Archer AXE75 and update.
-    wan_mac: "VERIFY_HARDWARE"
+    #wan_mac is correct, it is spoofed by ultra64 to authenticate with ISP.
+    wan_mac: "24:2F:D0:D1:2E:31"
     wifi:
       - ssid: "rsk"
         type: "Private"
