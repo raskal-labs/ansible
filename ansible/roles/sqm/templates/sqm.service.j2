@@ -1,0 +1,20 @@
+[Unit]
+Description=Cake Smart Queue Management
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+
+# Clear any existing qdiscs to prevent nesting errors (ignore fail if none exist)
+ExecStartPre=-/usr/sbin/tc qdisc del dev {{ interfaces.wan.dev }} root
+
+# Apply egress Cake shaping on the WAN interface
+ExecStart=/usr/sbin/tc qdisc add dev {{ interfaces.wan.dev }} root cake bandwidth {{ infra_services.sqm.bandwidth_up }} nat
+
+# Tear down on stop
+ExecStop=-/usr/sbin/tc qdisc del dev {{ interfaces.wan.dev }} root
+
+[Install]
+WantedBy=multi-user.target

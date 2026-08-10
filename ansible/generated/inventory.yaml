@@ -146,10 +146,10 @@ all:
     packages:
     - avahi
     - bind-utils
-    - blocky
     - caddy
     - conntrack-tools
     - curl
+    - ddclient
     - ethtool
     - git
     - headscale
@@ -157,6 +157,7 @@ all:
     - iftop
     - ipcalc
     - iperf3
+    - iproute
     - kea
     - mtr
     - nano
@@ -429,7 +430,6 @@ all:
         id: dns
         packages:
         - unbound
-        - blocky
         http_port: 4000
         blocklists:
         - https://adguardteam.github.io/HostlistsRegistry/assets/filter_1.txt
@@ -497,6 +497,15 @@ all:
         port: 9000
         domain: ca.rsk.al
         name: Step Online CA
+      sqm:
+        id: sqm
+        packages:
+        - iproute
+        bandwidth_up: 50mbit
+        bandwidth_down: 500mbit
+        templates:
+        - source: sqm.service.j2
+          destination: /etc/systemd/system/sqm.service
       vpn:
         id: vpn
         security_profile: strict
@@ -508,3 +517,16 @@ all:
         - source: wg0.conf.j2
           destination: /etc/wireguard/wg0.conf
         cidr: 100.64.1.0/24
+      ddclient:
+        id: ddclient
+        security_profile: hardened
+        packages:
+        - ddclient
+        protocol: cloudflare
+        zone: '{{ domains.public }}'
+        domain: '{{ domains.public }}'
+        login: token
+        password: '{{ vault_ddclient_api_token }}'
+        templates:
+        - source: ddclient.conf.j2
+          destination: /etc/ddclient.conf

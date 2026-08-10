@@ -2,7 +2,6 @@
 id: dns
 packages:
   - unbound
-  - blocky
 http_port: 4000
 blocklists:
   - https://adguardteam.github.io/HostlistsRegistry/assets/filter_1.txt

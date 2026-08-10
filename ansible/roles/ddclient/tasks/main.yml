@@ -1,0 +1,15 @@
+---
+- name: Deploy ddclient configuration
+  ansible.builtin.template:
+    src: ddclient.conf.j2
+    dest: /etc/ddclient.conf
+    owner: root
+    group: root
+    mode: '0600'
+  notify: Restart ddclient
+
+- name: Ensure ddclient is enabled and started
+  ansible.builtin.systemd:
+    name: ddclient
+    state: started
+    enabled: true

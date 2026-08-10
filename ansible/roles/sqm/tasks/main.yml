@@ -1,0 +1,20 @@
+---
+- name: Deploy SQM systemd service
+  ansible.builtin.template:
+    src: sqm.service.j2
+    dest: /etc/systemd/system/sqm.service
+    owner: root
+    group: root
+    mode: '0644'
+  notify: 
+    - Reload systemd daemon
+    - Restart sqm
+
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers
+
+- name: Ensure SQM service is enabled and started
+  ansible.builtin.systemd:
+    name: sqm
+    state: started
+    enabled: true

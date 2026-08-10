@@ -1,0 +1,13 @@
+---
+id: ddclient
+security_profile: hardened
+packages:
+  - ddclient
+protocol: cloudflare
+zone: "{{ domains.public }}"
+domain: "{{ domains.public }}"
+login: token
+password: "{{ vault_ddclient_api_token }}"
+templates:
+  - source: ddclient.conf.j2
+    destination: /etc/ddclient.conf

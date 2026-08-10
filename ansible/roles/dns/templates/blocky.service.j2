@@ -1,0 +1,14 @@
+[Unit]
+Description=Blocky DNS Proxy
+Documentation=https://0xerr0r.github.io/blocky/
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=/usr/local/bin/blocky --config /etc/blocky/blocky.yml
+Restart=on-failure
+User=root
+# Note: Security profiles are enforced via blocky-override.conf.j2
+
+[Install]
+WantedBy=multi-user.target

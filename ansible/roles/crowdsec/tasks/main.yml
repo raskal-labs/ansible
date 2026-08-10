@@ -1,0 +1,24 @@
+---
+- name: Add CrowdSec repository
+  ansible.builtin.get_url:
+    url: https://install.crowdsec.net/scripts/get_crowdsec.sh
+    dest: /tmp/get_crowdsec.sh
+    mode: '0700'
+
+- name: Execute CrowdSec repository script
+  ansible.builtin.command: /tmp/get_crowdsec.sh
+  args:
+    creates: /etc/yum.repos.d/crowdsec_crowdsec.repo
+
+- name: Install CrowdSec and nftables bouncer
+  ansible.builtin.dnf:
+    name: 
+      - crowdsec
+      - crowdsec-firewall-bouncer-nftables
+    state: present
+
+- name: Ensure CrowdSec service is started
+  ansible.builtin.systemd:
+    name: crowdsec
+    state: started
+    enabled: true
