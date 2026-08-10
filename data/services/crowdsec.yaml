@@ -1,0 +1,10 @@
+---
+id: crowdsec
+packages:
+  - crowdsec
+  - crowdsec-firewall-bouncer-nftables
+templates:
+  - source: crowdsec-acquis.yaml.j2
+    destination: /etc/crowdsec/acquis.yaml
+  - source: crowdsec-bouncer.conf.j2
+    destination: /etc/crowdsec/bouncers/crowdsec-firewall-bouncer.yaml

@@ -1,0 +1,12 @@
+---
+- name: Restart crowdsec
+  ansible.builtin.systemd:
+    name: crowdsec
+    state: restarted
+  when: not (dry_run | bool)
+
+- name: Restart crowdsec-firewall-bouncer
+  ansible.builtin.systemd:
+    name: crowdsec-firewall-bouncer
+    state: restarted
+  when: not (dry_run | bool)

@@ -7,13 +7,16 @@ Wants=network-online.target
 Type=oneshot
 RemainAfterExit=yes
 
-# Clear any existing qdiscs to prevent nesting errors (ignore fail if none exist)
+# tc requires deep kernel netlink access and cannot run with this sandbox restriction.
+ProtectKernelTunables=no
+
+# Clear any existing qdiscs to prevent nesting errors.
 ExecStartPre=-/usr/sbin/tc qdisc del dev {{ interfaces.wan.dev }} root
 
-# Apply egress Cake shaping on the WAN interface
+# Apply egress Cake shaping on the WAN interface.
 ExecStart=/usr/sbin/tc qdisc add dev {{ interfaces.wan.dev }} root cake bandwidth {{ infra_services.sqm.bandwidth_up }} nat
 
-# Tear down on stop
+# Tear down on stop.
 ExecStop=-/usr/sbin/tc qdisc del dev {{ interfaces.wan.dev }} root
 
 [Install]

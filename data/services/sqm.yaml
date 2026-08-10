@@ -1,11 +1,9 @@
 ---
 id: sqm
-# Intentionally omitting security_profile. 'tc' requires deep kernel netlink access
-# which conflicts with systemd ProtectKernelTunables sandboxing.
 packages:
   - iproute
-bandwidth_up: 50mbit
-bandwidth_down: 500mbit
+bandwidth_up: 950mbit
+bandwidth_down: 950mbit
 templates:
   - source: sqm.service.j2
     destination: /etc/systemd/system/sqm.service

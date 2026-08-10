@@ -1,16 +1,23 @@
 ---
+- name: Install SQM packages
+  ansible.builtin.dnf:
+    name: "{{ infra_services.sqm.packages }}"
+    state: present
+  when: not (dry_run | bool)
+
 - name: Deploy SQM systemd service
   ansible.builtin.template:
-    src: sqm.service.j2
-    dest: /etc/systemd/system/sqm.service
+    src: "{{ item.source }}"
+    dest: "{{ item.destination }}"
     owner: root
     group: root
     mode: '0644'
-  notify: 
+  loop: "{{ infra_services.sqm.templates }}"
+  notify:
     - Reload systemd daemon
     - Restart sqm
 
-- name: Flush handlers
+- name: Flush SQM handlers
   ansible.builtin.meta: flush_handlers
 
 - name: Ensure SQM service is enabled and started
@@ -18,3 +25,20 @@
     name: sqm
     state: started
     enabled: true
+  when: not (dry_run | bool)
+
+- name: Verify Cake is attached to the WAN interface
+  ansible.builtin.command:
+    argv:
+      - tc
+      - -s
+      - qdisc
+      - show
+      - dev
+      - "{{ interfaces.wan.dev }}"
+  register: sqm_qdisc_status
+  changed_when: false
+  failed_when:
+    - sqm_qdisc_status.rc != 0
+    - "'cake' not in sqm_qdisc_status.stdout"
+  when: not (dry_run | bool)

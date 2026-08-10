@@ -1,24 +1,106 @@
 ---
-- name: Add CrowdSec repository
+- name: Download CrowdSec repository script
   ansible.builtin.get_url:
     url: https://install.crowdsec.net/scripts/get_crowdsec.sh
     dest: /tmp/get_crowdsec.sh
     mode: '0700'
+  when: not (dry_run | bool)
 
-- name: Execute CrowdSec repository script
+- name: Configure CrowdSec repository
   ansible.builtin.command: /tmp/get_crowdsec.sh
   args:
     creates: /etc/yum.repos.d/crowdsec_crowdsec.repo
+  when: not (dry_run | bool)
 
-- name: Install CrowdSec and nftables bouncer
+- name: Install CrowdSec packages
   ansible.builtin.dnf:
-    name: 
-      - crowdsec
-      - crowdsec-firewall-bouncer-nftables
+    name: "{{ infra_services.crowdsec.packages }}"
     state: present
+  when: not (dry_run | bool)
 
-- name: Ensure CrowdSec service is started
+- name: Deploy CrowdSec configuration templates
+  ansible.builtin.template:
+    src: "{{ item.source }}"
+    dest: "{{ item.destination }}"
+    owner: root
+    group: root
+    mode: '0644'
+  loop: "{{ infra_services.crowdsec.templates }}"
+  notify:
+    - Restart crowdsec
+    - Restart crowdsec-firewall-bouncer
+
+- name: Ensure CrowdSec service is enabled and started
   ansible.builtin.systemd:
     name: crowdsec
     state: started
     enabled: true
+  when: not (dry_run | bool)
+
+- name: Check installed CrowdSec collections
+  ansible.builtin.command:
+    argv:
+      - cscli
+      - collections
+      - list
+  register: crowdsec_collections
+  changed_when: false
+  failed_when: false
+  when: not (dry_run | bool)
+
+- name: Install CrowdSec Linux collection
+  ansible.builtin.command:
+    argv:
+      - cscli
+      - collections
+      - install
+      - crowdsecurity/linux
+  when:
+    - not (dry_run | bool)
+    - crowdsec_collections.rc == 0
+    - "'crowdsecurity/linux' not in crowdsec_collections.stdout"
+  notify: Restart crowdsec
+
+- name: Install CrowdSec SSHD collection
+  ansible.builtin.command:
+    argv:
+      - cscli
+      - collections
+      - install
+      - crowdsecurity/sshd
+  when:
+    - not (dry_run | bool)
+    - crowdsec_collections.rc == 0
+    - "'crowdsecurity/sshd' not in crowdsec_collections.stdout"
+  notify: Restart crowdsec
+
+- name: Install CrowdSec HTTP CVE collection
+  ansible.builtin.command:
+    argv:
+      - cscli
+      - collections
+      - install
+      - crowdsecurity/http-cve
+  when:
+    - not (dry_run | bool)
+    - crowdsec_collections.rc == 0
+    - "'crowdsecurity/http-cve' not in crowdsec_collections.stdout"
+  notify: Restart crowdsec
+
+- name: Ensure CrowdSec firewall bouncer is enabled and started
+  ansible.builtin.systemd:
+    name: crowdsec-firewall-bouncer
+    state: started
+    enabled: true
+  when: not (dry_run | bool)
+
+- name: Verify CrowdSec service and bouncer operation
+  ansible.builtin.command:
+    argv:
+      - cscli
+      - bouncers
+      - list
+  register: crowdsec_bouncers
+  changed_when: false
+  failed_when: crowdsec_bouncers.rc != 0
+  when: not (dry_run | bool)

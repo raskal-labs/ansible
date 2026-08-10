@@ -2,8 +2,10 @@
 - name: Reload systemd daemon
   ansible.builtin.systemd:
     daemon_reload: true
+  when: not (dry_run | bool)
 
 - name: Restart sqm
   ansible.builtin.systemd:
     name: sqm
     state: restarted
+  when: not (dry_run | bool)

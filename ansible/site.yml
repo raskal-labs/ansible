@@ -36,6 +36,8 @@
         - ansible.builtin.import_role:
             name: network
         - ansible.builtin.import_role:
+            name: sqm
+        - ansible.builtin.import_role:
             name: firewall
         - ansible.builtin.import_role:
             name: dns
@@ -51,8 +53,6 @@
             name: avahi
         - ansible.builtin.import_role:
             name: ddclient
-        - ansible.builtin.import_role:
-            name: sqm
         - ansible.builtin.import_role:
             name: step-ca
         - ansible.builtin.import_role:
@@ -103,20 +103,6 @@
     - name: Restart headscale
       ansible.builtin.systemd:
         name: headscale
-        state: restarted
-        enabled: true
-      when: not (dry_run | bool)
-
-    - name: Restart crowdsec
-      ansible.builtin.systemd:
-        name: crowdsec
-        state: restarted
-        enabled: true
-      when: not (dry_run | bool)
-
-    - name: Restart crowdsec-firewall-bouncer
-      ansible.builtin.systemd:
-        name: crowdsec-firewall-bouncer
         state: restarted
         enabled: true
       when: not (dry_run | bool)
