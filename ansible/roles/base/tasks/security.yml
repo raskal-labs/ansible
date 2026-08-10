@@ -17,6 +17,10 @@
       headscale: "headscale"
       caddy: "caddy"
       step-ca: "step-ca"
+      avahi: "avahi-daemon"
+      vpn: "wg-quick@wg0"
+      ddclient: "ddclient"
+      crowdsec: "crowdsec"
 
 - name: Collect host services requiring security profiles
   ansible.builtin.set_fact:

@@ -1,4 +1,0 @@
-# Original Filename: Step 3 — On the router, generate the real bouncer API key
-
-cscli bouncers add firewall-bouncer
-# Copy the key that is printed

@@ -1,3 +1,0 @@
-# Original Filename: Add this line to the decrypted content
-
-vault_crowdsec_bouncer_api_key: "PLACEHOLDER_run_cscli_after_install"

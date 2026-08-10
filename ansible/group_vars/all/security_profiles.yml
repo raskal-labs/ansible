@@ -8,7 +8,7 @@ security_profiles:
     systemd_overrides:
       PrivateTmp: "yes"
       ProtectKernelTunables: "yes"
-      
+
   hardened:
     description: "Standard security hardening for most services"
     systemd_overrides:
@@ -20,7 +20,7 @@ security_profiles:
       ProtectKernelModules: "yes"
       ProtectControlGroups: "yes"
       NoNewPrivileges: "yes"
-      
+
   strict:
     description: "Maximum security hardening for critical infrastructure services"
     systemd_overrides:

@@ -1,5 +1,0 @@
-# Original Filename: After committing, run
-
-make compile
-make validate
-make dry-run

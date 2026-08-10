@@ -1,6 +1,0 @@
-# Original Filename: Step 2 — Run the full playbook to install CrowdSec
-
-ansible-playbook ansible/site.yml \
-  -i ansible/generated/inventory.yaml \
-  --limit ultra64 \
-  --vault-password-file ansible/.vault_pass
