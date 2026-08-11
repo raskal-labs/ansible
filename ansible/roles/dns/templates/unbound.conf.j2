@@ -6,5 +6,5 @@ server:
     do-udp: yes
     do-tcp: yes
 
-    chroot: {{ infra_services.dns.unbound.chroot }}
+    chroot: ""
     do-not-query-localhost: {{ infra_services.dns.unbound.do_not_query_localhost }}

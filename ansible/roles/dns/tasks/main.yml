@@ -1,29 +1,16 @@
 ---
-- name: Fetch latest Blocky release metadata from GitHub API
-  ansible.builtin.uri:
-    url: "https://api.github.com/repos/0xERR0R/blocky/releases/latest"
-    return_content: true
-    headers:
-      Accept: "application/vnd.github.v3+json"
-      User-Agent: "Ansible-Blocky-Updater"
-  register: blocky_api_response
-  check_mode: false
-
-- name: Extract Linux x86_64 download URL
+- name: Set Blocky version to v0.24
   ansible.builtin.set_fact:
-    blocky_download_url: >-
-      {{ 
-        blocky_api_response.json.assets 
-        | selectattr('name', 'search', 'Linux_x86_64.tar.gz') 
-        | map(attribute='browser_download_url') 
-        | first 
-      }}
+    blocky_version: "0.24"
+
+- name: Construct Blocky download URL for v0.24
+  ansible.builtin.set_fact:
+    blocky_download_url: "https://github.com/0xERR0R/blocky/releases/download/v{{ blocky_version }}/blocky_v{{ blocky_version }}_Linux_x86_64.tar.gz"
 
 - name: Download latest Blocky release via curl (bypassing urllib3 bug)
   ansible.builtin.command: "curl -sL -o /tmp/blocky.tar.gz {{ blocky_download_url }}"
   args:
     creates: /usr/local/bin/blocky
-  check_mode: false
 
 - name: Extract Blocky binary
   ansible.builtin.unarchive:
