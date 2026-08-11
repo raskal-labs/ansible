@@ -12,7 +12,9 @@ server:
   host: 1
   grpc_port: 50443
   metrics_port: 9090
-  db_path: /var/lib/headscale/db.sqlite
+database:
+  sqlite:
+    path: /var/lib/headscale/db.sqlite
   # ⚠️ Back up db_path before any ultra64 OS-level changes or redeploys.
   # All enrolled nodes, users, and pre-auth keys live here.
   # Losing this file requires re-enrolling all devices.

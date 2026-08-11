@@ -37,6 +37,15 @@
     mode: '0640'
   notify: Restart headscale
 
+- name: Deploy Headscale ACL policy
+  ansible.builtin.template:
+    src: headscale-acls.yaml.j2
+    dest: /etc/headscale/acls.yaml
+    owner: headscale
+    group: headscale
+    mode: '0640'
+  notify: Restart headscale
+
 - name: Enable and start Headscale service
   ansible.builtin.systemd:
     name: headscale

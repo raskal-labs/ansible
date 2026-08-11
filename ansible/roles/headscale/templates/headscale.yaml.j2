@@ -2,7 +2,7 @@
 ---
 server_url: https://wfc.raskal.io
 
-listen_addr: 0.0.0.0:8080
+listen_addr: 127.0.0.1:8085
 metrics_listen_addr: 127.0.0.1:{{ infra_services.headscale.server.metrics_port }}
 grpc_listen_addr: 0.0.0.0:{{ infra_services.headscale.server.grpc_port }}
 grpc_allow_insecure: false
@@ -11,8 +11,9 @@ private_key_path: /var/lib/headscale/private.key
 noise:
   private_key_path: /var/lib/headscale/noise_private.key
 
-ip_prefixes:
-  - {{ infra_services.headscale.mesh_subnet }}
+prefixes:
+  v4:
+    - {{ infra_services.headscale.mesh_subnet }}
 
 derp:
   server:
@@ -25,16 +26,18 @@ derp:
 disable_check_updates: true
 ephemeral_node_inactivity_timeout: 30m
 
-db_type: sqlite3
-db_path: {{ infra_services.headscale.server.db_path }}
+database:
+  sqlite:
+    path: {{ infra_services.headscale.database.sqlite.path }}
 
 log:
   level: info
   format: text
 
-acls_policy_path: /etc/headscale/acls.yaml
+policy:
+  path: /etc/headscale/acls.yaml
 
-dns_config:
+dns:
   override_local_dns: false
   nameservers:
     - {{ infra_services.headscale.mesh_gateway_ip }}
