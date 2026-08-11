@@ -152,7 +152,6 @@ all:
     - ddclient
     - ethtool
     - git
-    - headscale
     - htop
     - iftop
     - ipcalc
@@ -166,8 +165,6 @@ all:
     - nload
     - nmap
     - socat
-    - step-ca
-    - step-cli
     - tcpdump
     - tmux
     - traceroute
@@ -409,7 +406,9 @@ all:
           host: 1
           grpc_port: 50443
           metrics_port: 9090
-          db_path: /var/lib/headscale/db.sqlite
+        database:
+          sqlite:
+            path: /var/lib/headscale/db.sqlite
         packages:
         - headscale
         templates:
@@ -489,6 +488,16 @@ all:
         templates:
         - source: avahi-daemon.conf.j2
           destination: /etc/avahi/avahi-daemon.conf
+      crowdsec:
+        id: crowdsec
+        packages:
+        - crowdsec
+        - crowdsec-firewall-bouncer-nftables
+        templates:
+        - source: crowdsec-acquis.yaml.j2
+          destination: /etc/crowdsec/acquis.yaml
+        - source: crowdsec-bouncer.conf.j2
+          destination: /etc/crowdsec/bouncers/crowdsec-firewall-bouncer.yaml
       step-ca:
         id: step-ca
         packages:
@@ -501,8 +510,8 @@ all:
         id: sqm
         packages:
         - iproute
-        bandwidth_up: 50mbit
-        bandwidth_down: 500mbit
+        bandwidth_up: 950mbit
+        bandwidth_down: 950mbit
         templates:
         - source: sqm.service.j2
           destination: /etc/systemd/system/sqm.service
