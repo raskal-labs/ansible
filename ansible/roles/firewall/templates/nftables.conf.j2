@@ -2,7 +2,6 @@ flush ruleset
 
 # Define network variables
 define VAULT_NET = {{ networks['vlan-64'].cidr }}
-define SANDBOX_NET = {{ networks['vlan-32'].cidr }}
 define HEADSCALE_NET = {{ infra_services.headscale.mesh_subnet }}
 define BREAKGLASS_VPN_NET = {{ infra_services.vpn.cidr }}
 
@@ -40,9 +39,6 @@ table inet filter {
         iifname "{{ interfaces.lan.dev }}" udp dport { 53, 67 } accept
         iifname "{{ interfaces.lan.dev }}" tcp dport 53 accept
 
-        # Allow mDNS (port 5353) from Vault and Sandbox networks
-        ip saddr { $VAULT_NET, $SANDBOX_NET } udp dport 5353 accept
-
         # Allow ICMP (Ping)
         ip protocol icmp accept
 
@@ -69,10 +65,6 @@ table inet filter {
         # Allow Vault network to route to WAN
         ip saddr $VAULT_NET oifname "{{ interfaces.wan.dev }}" accept
 
-        # Allow Sandbox to route to WAN but DROP traffic to private networks
-        ip saddr $SANDBOX_NET ip daddr { 10.0.0.0/8, 100.64.0.0/10 } drop
-        ip saddr $SANDBOX_NET oifname "{{ interfaces.wan.dev }}" accept
-
         # Allow Headscale mesh traffic
         ip saddr $HEADSCALE_NET ip daddr $VAULT_NET accept
         ip saddr $VAULT_NET ip daddr $HEADSCALE_NET accept
@@ -83,9 +75,6 @@ table inet filter {
 
         # Allow VPN clients (wg0) to route traffic into networks
         iifname "wg0" oifname "{{ interfaces.lan.dev }}" accept
-
-        # Allow mDNS forwarding between Vault and Sandbox
-        ip saddr { $VAULT_NET, $SANDBOX_NET } ip daddr { $VAULT_NET, $SANDBOX_NET } udp dport 5353 accept
     }
 }
 

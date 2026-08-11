@@ -1,0 +1,7 @@
+
+### 2. `ansible/roles/firewall/templates/nftables.conf.j2`
+
+- Remove the `define SANDBOX_NET` line and **all** rules that reference `$SANDBOX_NET`.  
+- Remove the mDNS (port 5353) rules since Avahi is being removed (no Avahi traffic needs to be allowed).  
+- Keep everything else (HEADSCALE, VPN, etc.).
+

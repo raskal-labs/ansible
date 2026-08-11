@@ -1,0 +1,21 @@
+
+---
+
+## Files to be removed (completely deleted from the repository)
+
+Delete these files manually (or with `git rm`):
+
+- `data/networks/vlan-32.yaml`
+- `data/services/avahi.yaml`
+- `ansible/roles/avahi/tasks/main.yml`
+- `ansible/roles/avahi/handlers/main.yml`
+- `ansible/roles/avahi/templates/avahi-daemon.conf.j2`
+(If the avahi role directory becomes empty, you can delete the whole `ansible/roles/avahi/` tree.)
+
+---
+
+## `.202` dead‑ends – next step
+
+The Batch 4.1 requirement also says to purge `.202` dead‑ends, but I cannot see which files contain them.  
+Please run the correct grep command from the repository root:
+
