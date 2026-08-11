@@ -70,7 +70,7 @@
 - name: Deploy CA password from vault
   ansible.builtin.copy:
     content: "{{ vault_step_ca_password }}"
-    dest: "/etc/step-ca/secrets/password"
+    dest: "/etc/step-ca/password"
     owner: step
     group: step
     mode: '0600'

@@ -17,7 +17,8 @@
 ({{ name }}) {
 {% if profile.type == 'acme' %}
     tls {
-        issuer acme {{ profile.endpoint }} {
+        issuer acme {
+            dir {{ profile.endpoint }}
             trusted_roots {{ profile.trusted_roots }}
         }
     }
