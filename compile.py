@@ -10,6 +10,8 @@ import sys
 import yaml
 import glob
 
+THIRD_PARTY_PACKAGES = {'headscale', 'step-ca', 'step-cli', 'crowdsec', 'crowdsec-firewall-bouncer-nftables'}
+
 
 def load_yaml(filepath):
     """Load YAML file and return parsed content."""
@@ -43,6 +45,9 @@ def aggregate_packages(environment_data, services_data, nodes_data):
             packages.update(node_data['packages'])
         if 'packages_absent' in node_data:
             packages_absent.update(node_data['packages_absent'])
+
+    # Exclude third‑party packages that do not exist in Fedora's default repos
+    packages = packages - THIRD_PARTY_PACKAGES
 
     return sorted(list(packages)), sorted(list(packages_absent))
 
