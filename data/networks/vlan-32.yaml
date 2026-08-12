@@ -1,12 +1,1 @@
----
-id: vlan-32
-type: network
-network: 32
-gateway_host: 1
-prefix_len: 24
-dhcp_range:
-  start: 50
-  end: 250
-upstream_dns:
-  - "1.1.1.1"
-  - "8.8.8.8"
+{}

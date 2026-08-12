@@ -1,8 +1,1 @@
----
-id: avahi
-security_profile: baseline
-packages:
-  - avahi
-templates:
-  - source: avahi-daemon.conf.j2
-    destination: /etc/avahi/avahi-daemon.conf
+{}
