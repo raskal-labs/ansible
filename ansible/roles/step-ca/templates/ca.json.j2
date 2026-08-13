@@ -27,11 +27,11 @@
         "key": {
           "use": "sig",
           "kty": "EC",
-          "kid": "WzZ30kbbf3LLAaMC5iY8hcHV-cO_BQgKyfH5ml_PDUo",
+          "kid": "{{ step_ca_jwk_kid }}",
           "crv": "P-256",
           "alg": "ES256",
-          "x": "fQOFJobPmFp6O3NhgrS9vJd9_u_b8jA_T_b26GIFMNU",
-          "y": "smP8VR-AJqy7JtKYN8w3LP_ZQTwjIMAXgkfE-a2iWYA"
+          "x": "{{ step_ca_jwk_x }}",
+          "y": "{{ step_ca_jwk_y }}"
         },
         "encryptedKey": "{{ vault_step_ca_jwk_encrypted_key }}"
       },

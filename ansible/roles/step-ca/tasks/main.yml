@@ -76,6 +76,47 @@
     mode: '0600'
   no_log: true
 
+- name: Check if step-ca is already initialized
+  ansible.builtin.stat:
+    path: /etc/step-ca/config/ca.json
+  register: step_ca_config
+
+- name: Initialize step-ca if not already done
+  ansible.builtin.command:
+    cmd: >
+      step ca init
+      --root /etc/step-ca/certs/root_ca.crt
+      --key /etc/step-ca/secrets/root_ca_key
+      --ca-url https://ca.rsk.al:9000
+      --name "Step Online CA"
+      --dns ca.rsk.al,10.64.0.1,127.0.0.1,localhost
+      --address :9000
+      --provisioner labs@raskal.io
+      --password-file /etc/step-ca/password
+      --ssh
+      --acme
+      --deployment-type standalone
+      --no-db
+  when: not step_ca_config.stat.exists
+  become: yes
+  become_user: step
+  environment:
+    STEPPATH: /etc/step-ca
+  no_log: true
+
+- name: Extract JWK parameters from initialized CA
+  ansible.builtin.slurp:
+    src: /etc/step-ca/config/ca.json
+  register: step_ca_config_content
+  when: not step_ca_config.stat.exists
+
+- name: Set JWK facts for template
+  ansible.builtin.set_fact:
+    step_ca_jwk_kid: "{{ (step_ca_config_content.content | b64decode | from_json).authority.provisioners[0].key.kid }}"
+    step_ca_jwk_x: "{{ (step_ca_config_content.content | b64decode | from_json).authority.provisioners[0].key.x }}"
+    step_ca_jwk_y: "{{ (step_ca_config_content.content | b64decode | from_json).authority.provisioners[0].key.y }}"
+  when: not step_ca_config.stat.exists
+
 - name: Deploy step-ca configuration
   ansible.builtin.template:
     src: ca.json.j2

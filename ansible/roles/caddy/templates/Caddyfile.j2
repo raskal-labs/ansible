@@ -111,5 +111,5 @@
 # --- DEFAULT PORTAL ---
 # ====================================================================
 :80 {
-    respond "[REDACTED]-labs" 200
+    redir https://{host}{uri} permanent
 }
