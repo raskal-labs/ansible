@@ -6,3 +6,9 @@ packages:
 port: 9000
 domain: ca.rsk.al
 name: Step Online CA
+templates:
+  - source: ca.json.j2
+    destination: /etc/step-ca/config/ca.json
+    owner: step
+    group: step
+    mode: '0600'

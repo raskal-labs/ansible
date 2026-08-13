@@ -117,13 +117,14 @@
     step_ca_jwk_y: "{{ (step_ca_config_content.content | b64decode | from_json).authority.provisioners[0].key.y }}"
   when: not step_ca_config.stat.exists
 
-- name: Deploy step-ca configuration
+- name: Deploy step-ca configuration from dynamic templates
   ansible.builtin.template:
-    src: ca.json.j2
-    dest: /etc/step-ca/config/ca.json
-    owner: step
-    group: step
-    mode: '0600'
+    src: "{{ item.source }}"
+    dest: "{{ item.destination }}"
+    owner: "{{ item.owner | default('root') }}"
+    group: "{{ item.group | default('root') }}"
+    mode: "{{ item.mode | default('0644') }}"
+  loop: "{{ infra_services['step-ca']['templates'] | default([]) }}"
   notify: Restart step-ca
 
 - name: Flush handlers to restart step-ca if config changed
