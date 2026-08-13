@@ -22,20 +22,6 @@
   "authority": {
     "provisioners": [
       {
-        "type": "JWK",
-        "name": "labs@raskal.io",
-        "key": {
-          "use": "sig",
-          "kty": "EC",
-          "kid": "{{ step_ca_jwk_kid }}",
-          "crv": "P-256",
-          "alg": "ES256",
-          "x": "{{ step_ca_jwk_x }}",
-          "y": "{{ step_ca_jwk_y }}"
-        },
-        "encryptedKey": "{{ vault_step_ca_jwk_encrypted_key }}"
-      },
-      {
         "type": "ACME",
         "name": "acme",
         "claims": {
