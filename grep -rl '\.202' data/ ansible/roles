@@ -1,3 +1,0 @@
-
-Then **add every file in the output** to the chat (using the usual `filename + ``` … ``` ` format).  
-I’ll immediately update those files and verify referential integrity. After that, we can run `make compile && make validate`.
