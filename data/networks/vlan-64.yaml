@@ -10,14 +10,10 @@ dhcp_range:
   end: 199
 static_leases:
   - hostname: "nx"
-    mac: "88:76:B9:8F:30:E0"
     host: 2
   - hostname: "nitro"
-    mac: "24:2F:D0:D1:2E:30"
     host: 3
   - hostname: "gamecube"
-    mac: "84:47:09:44:8B:F9"
     host: 4
   - hostname: "pi-auditor"
-    mac: "74:A7:EA:EE:67:ED"
     host: 10
