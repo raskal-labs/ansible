@@ -49,21 +49,21 @@ all:
           dns_server: 10.64.0.1
           static_leases:
           - hostname: nx
-            mac: 88:76:B9:8F:30:E0
             host: 2
             ip: 10.64.0.2
+            mac: 88:76:B9:8F:30:E0
           - hostname: nitro
-            mac: 24:2F:D0:D1:2E:30
             host: 3
             ip: 10.64.0.3
+            mac: 24:2F:D0:D1:2E:30
           - hostname: gamecube
-            mac: 84:47:09:44:8B:F9
             host: 4
             ip: 10.64.0.4
+            mac: 84:47:09:44:8B:F9
           - hostname: pi-auditor
-            mac: 74:A7:EA:EE:67:ED
             host: 10
             ip: 10.64.0.10
+            mac: 74:A7:EA:EE:67:ED
         vpn:
           port: 51820
           privkey: '{{ vault_wg_ultra64_private_key }}'
@@ -144,7 +144,6 @@ all:
       home: /home/raskal
       state: present
     packages:
-    - avahi
     - bind-utils
     - caddy
     - conntrack-tools
@@ -192,15 +191,6 @@ all:
         subnet_mask: 255.255.255.0
         broadcast: 10.64.0.255
         network_address: 10.64.0.0
-      vlan-32:
-        id: vlan-32
-        network: 32
-        prefix_len: 24
-        cidr: 10.32.0.0/24
-        gateway: 10.32.0.1
-        subnet_mask: 255.255.255.0
-        broadcast: 10.32.0.255
-        network_address: 10.32.0.0
     infra_services:
       caddy:
         id: caddy
@@ -480,14 +470,7 @@ all:
         templates:
         - source: kea-dhcp4.conf.j2
           destination: /etc/kea/kea-dhcp4.conf
-      avahi:
-        id: avahi
-        security_profile: baseline
-        packages:
-        - avahi
-        templates:
-        - source: avahi-daemon.conf.j2
-          destination: /etc/avahi/avahi-daemon.conf
+      avahi: {}
       crowdsec:
         id: crowdsec
         packages:
