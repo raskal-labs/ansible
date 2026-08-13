@@ -278,6 +278,11 @@ def generate_inventory():
                             for lease in vlan['static_leases']:
                                 l = dict(lease)
                                 l['ip'] = derive_ip_from_network_host(dhcp_network, l['host'])
+                                hostname_lease = l.get('hostname')
+                                if hostname_lease:
+                                    node = nodes_data.get(hostname_lease)
+                                    if node and 'mac' in node:
+                                        l['mac'] = node['mac']
                                 leases.append(l)
                             dhcp_config['static_leases'] = leases
                     host_vars['host_services']['dhcp'] = dhcp_config
