@@ -5,7 +5,7 @@
 - name: Collect services requiring security profiles
   ansible.builtin.set_fact:
     secured_services: "{{ secured_services | default([]) + [{'name': item.key, 'profile': item.value.security_profile, 'service_name': service_mapping[item.key] | default(item.key)}] }}"
-  loop: "{{ services | dict2items }}"
+  loop: "{{ infra_services | dict2items }}"
   when: 
     - item.value.security_profile is defined
     - service_mapping[item.key] is defined

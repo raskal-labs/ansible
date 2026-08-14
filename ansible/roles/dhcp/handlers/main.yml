@@ -1,0 +1,6 @@
+---
+- name: Restart kea-dhcp4
+  ansible.builtin.systemd:
+    name: kea-dhcp4
+    state: restarted
+  when: not ansible_check_mode

@@ -61,7 +61,7 @@
         respond 204
     }
     handle * {
-        reverse_proxy {{ svc.backend }} {
+        reverse_proxy 127.0.0.1:{{ infra_services.headscale.server.http_port }} {
             header_up X-Real-IP {client_ip}
             header_up X-Forwarded-For {client_ip}
         }

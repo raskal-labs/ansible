@@ -52,7 +52,13 @@ host_services:
     host_id: 1
     peers:
       - name: gcp-aider
-        pubkey: "TPc/hcMYdohDuuD9pkadydtGnUlOTf1q2e4lSYf8e04=="
+        # NOTE (audit fix 2026-08-14): original value had invalid base64
+        # padding ("==", 45 chars total) which is not a syntactically valid
+        # WireGuard key encoding (32-byte keys must be 44 chars, single "=").
+        # Corrected padding below to make this parse; the underlying key
+        # material could not be independently verified as authentic and
+        # should be reconfirmed/regenerated with the peer if handshakes fail.
+        pubkey: "TPc/hcMYdohDuuD9pkadydtGnUlOTf1q2e4lSYf8e04="
         host_id: 5
         extra_networks:
           - network: 64

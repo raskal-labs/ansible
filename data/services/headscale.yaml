@@ -10,6 +10,9 @@ server:
   # Headscale runs on ultra64 (the router, 10.64.0.1).
   host_network: 64
   host: 1
+  # HTTP API / ACME registration listener (127.0.0.1 only — exposed
+  # externally via Caddy's reverse proxy, which derives this same port).
+  http_port: 8080
   grpc_port: 50443
   metrics_port: 9090
 database:

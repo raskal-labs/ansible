@@ -2,7 +2,7 @@
 ---
 server_url: https://wfc.raskal.io
 
-listen_addr: 127.0.0.1:8085
+listen_addr: 127.0.0.1:{{ infra_services.headscale.server.http_port }}
 metrics_listen_addr: 127.0.0.1:{{ infra_services.headscale.server.metrics_port }}
 grpc_listen_addr: 0.0.0.0:{{ infra_services.headscale.server.grpc_port }}
 grpc_allow_insecure: false

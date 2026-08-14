@@ -1,0 +1,10 @@
+---
+- name: Apply sysctl configuration
+  ansible.builtin.command: sysctl --system
+  when: not ansible_check_mode
+  changed_when: true
+
+- name: Reload udev rules
+  ansible.builtin.shell: udevadm control --reload-rules && udevadm trigger
+  when: not ansible_check_mode
+  changed_when: true

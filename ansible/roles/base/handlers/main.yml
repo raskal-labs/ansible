@@ -1,0 +1,5 @@
+---
+- name: Regenerate GRUB config
+  ansible.builtin.command: grub2-mkconfig -o /boot/grub2/grub.cfg
+  when: not ansible_check_mode
+  changed_when: true

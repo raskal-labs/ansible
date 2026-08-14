@@ -53,7 +53,8 @@ services:
   - name: headscale_wan
     domains: ["wfc.raskal.io"]
     action: headscale
-    backend: 127.0.0.1:8080
+    # backend is derived from infra_services.headscale.server.http_port
+    # (see Caddyfile.j2) — do not hardcode a backend here.
   - name: auth_wan
     domains: ["auth.raskal.io"]
     backend_network: 64

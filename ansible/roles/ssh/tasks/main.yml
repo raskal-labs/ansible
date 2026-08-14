@@ -22,9 +22,16 @@
     - ssh
     - authorized_keys
 
-- name: Deploy ultra64 private key to root
+# NOTE (audit fix 2026-08-14): previously hardcoded to
+# vault_ultra64_private_key, which would deploy ultra64's private key to
+# ANY host this role was applied to. This now derives the vault variable
+# name per-host (vault_<inventory_hostname>_private_key), matching the
+# existing naming convention (e.g. vault_ultra64_private_key for ultra64).
+# Each additional host must define its own vault_<hostname>_private_key
+# secret before this role is applied to it.
+- name: Deploy host-specific private key to root
   ansible.builtin.copy:
-    content: "{{ vault_ultra64_private_key }}"
+    content: "{{ lookup('vars', 'vault_' ~ inventory_hostname ~ '_private_key') }}"
     dest: /root/.ssh/id_ed25519
     mode: '0600'
     owner: root

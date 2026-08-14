@@ -24,8 +24,22 @@ def ensure_directory(path):
     os.makedirs(path, exist_ok=True)
 
 
-def aggregate_packages(environment_data, services_data, nodes_data):
-    """Aggregate and deduplicate packages from all sources."""
+def aggregate_packages(environment_data, node_data, services_data):
+    """
+    Aggregate and deduplicate packages for a single host.
+
+    Scope (audit fix 2026-08-14): package aggregation was previously global
+    — every host received every service's packages regardless of whether
+    that host actually ran the service. This is now computed per host:
+      - environment.yaml packages always apply (baseline for all hosts).
+      - the node's own declared packages always apply.
+      - service packages only apply to hosts that actually run services.
+        Currently, service placement is expressed only via the
+        `profile: router` flag (the same flag ansible/site.yml and
+        ansible/dry-run.yml already use to gate whether router roles are
+        applied to a host), so that is used here as the equivalent gate
+        for which hosts should receive service packages.
+    """
     packages = set()
     packages_absent = set()
 
@@ -34,17 +48,17 @@ def aggregate_packages(environment_data, services_data, nodes_data):
     if 'packages_absent' in environment_data:
         packages_absent.update(environment_data['packages_absent'])
 
-    for service_data in services_data.values():
-        if 'packages' in service_data:
-            packages.update(service_data['packages'])
-        if 'packages_absent' in service_data:
-            packages_absent.update(service_data['packages_absent'])
+    if 'packages' in node_data:
+        packages.update(node_data['packages'])
+    if 'packages_absent' in node_data:
+        packages_absent.update(node_data['packages_absent'])
 
-    for node_data in nodes_data.values():
-        if 'packages' in node_data:
-            packages.update(node_data['packages'])
-        if 'packages_absent' in node_data:
-            packages_absent.update(node_data['packages_absent'])
+    if node_data.get('profile') == 'router':
+        for service_data in services_data.values():
+            if 'packages' in service_data:
+                packages.update(service_data['packages'])
+            if 'packages_absent' in service_data:
+                packages_absent.update(service_data['packages_absent'])
 
     # Exclude third‑party packages that do not exist in Fedora's default repos
     packages = packages - THIRD_PARTY_PACKAGES
@@ -303,6 +317,16 @@ def generate_inventory():
                                         )
                                         peer['extra_ips'].append(extra_ip)
 
+            # Per-host package aggregation (audit fix 2026-08-14 — see
+            # aggregate_packages() docstring). This overwrites the node's
+            # raw packages/packages_absent lists with the fully aggregated,
+            # correctly-scoped set for this specific host.
+            host_packages, host_packages_absent = aggregate_packages(
+                environment, host_vars, services_data
+            )
+            host_vars['packages'] = host_packages
+            host_vars['packages_absent'] = host_packages_absent
+
             inventory['all']['hosts'][hostname] = host_vars
 
     # Global identities
@@ -316,10 +340,16 @@ def generate_inventory():
         else:
             inventory['all']['vars'][key] = value
 
-    # Packages
-    packages, packages_absent = aggregate_packages(environment, services_data, nodes_data)
-    inventory['all']['vars']['packages'] = packages
-    inventory['all']['vars']['packages_absent'] = packages_absent
+    # Baseline packages (all.vars level). Ansible host_vars (set per-host
+    # above) take precedence over these for any host that defines its own
+    # 'packages'/'packages_absent', per normal Ansible variable precedence.
+    # This baseline only matters for hosts with no explicit override.
+    baseline_packages = sorted(
+        list(set(environment.get('packages', [])) - THIRD_PARTY_PACKAGES)
+    )
+    baseline_packages_absent = sorted(list(set(environment.get('packages_absent', []))))
+    inventory['all']['vars']['packages'] = baseline_packages
+    inventory['all']['vars']['packages_absent'] = baseline_packages_absent
 
     # Derived networks
     if derived_networks:

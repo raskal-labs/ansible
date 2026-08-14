@@ -1,1 +1,86 @@
-ansible/site.yml
+---
+# Main site playbook — full infrastructure deployment.
+#
+# Usage:
+#   make deploy
+#   make deploy HOST=<host>
+#   make deploy-role ROLE=<role>
+#   make deploy-tags TAGS=<tags>
+#
+# This playbook applies real changes to target machines. For a safe,
+# no-op validation pass, use ansible/dry-run.yml (via `make dry-run`).
+
+- name: Full Infrastructure Deployment
+  hosts: all
+  become: true
+
+  vars:
+    # Default to false so roles gated on dry_run (crowdsec, headscale, vpn,
+    # sqm) actually perform their state-changing tasks during a real deploy.
+    # ansible/dry-run.yml overrides this to true for its own play.
+    dry_run: false
+    min_ansible_version: "2.14.0"
+
+  tasks:
+    - name: Ensure Ansible version requirement
+      ansible.builtin.assert:
+        that:
+          - ansible_version.full is version(min_ansible_version, '>=')
+
+    - name: Apply Universal Foundation
+      ansible.builtin.import_role:
+        name: base
+      tags: base
+
+    - name: Apply Time Synchronization
+      ansible.builtin.import_role:
+        name: chrony
+      tags: chrony
+
+    - name: Apply Router Roles
+      block:
+        - ansible.builtin.import_role:
+            name: network
+          tags: network
+
+        - ansible.builtin.import_role:
+            name: firewall
+          tags: firewall
+
+        - ansible.builtin.import_role:
+            name: dns
+          tags: dns
+
+        - ansible.builtin.import_role:
+            name: dhcp
+          tags: dhcp
+
+        - ansible.builtin.import_role:
+            name: vpn
+          tags: vpn
+
+        - ansible.builtin.import_role:
+            name: headscale
+          tags: headscale
+
+        - ansible.builtin.import_role:
+            name: crowdsec
+          tags: crowdsec
+
+        - ansible.builtin.import_role:
+            name: avahi
+          tags: avahi
+
+        - ansible.builtin.import_role:
+            name: step-ca
+          tags: step-ca
+
+        - ansible.builtin.import_role:
+            name: caddy
+          tags: caddy
+
+        - ansible.builtin.import_role:
+            name: sqm
+          tags: sqm
+
+      when: profile is defined and profile == 'router'

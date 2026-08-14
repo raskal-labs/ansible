@@ -5,11 +5,11 @@ pid=/var/run/ddclient.pid
 ssl=yes
 use=web, web=default
 
-protocol={{ ddclient.protocol }}
-{% if ddclient.zone is defined %}
-zone={{ ddclient.zone }}
+protocol={{ infra_services.ddclient.protocol }}
+{% if infra_services.ddclient.zone is defined %}
+zone={{ infra_services.ddclient.zone }}
 {% endif %}
-login={{ ddclient.login | default('token') }}
-password={{ ddclient.password }}
+login={{ infra_services.ddclient.login | default('token') }}
+password={{ infra_services.ddclient.password }}
 
-{{ ddclient.domain }}
+{{ infra_services.ddclient.domain }}
