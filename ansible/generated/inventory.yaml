@@ -70,7 +70,7 @@ all:
           host_id: 1
           peers:
           - name: gcp-aider
-            pubkey: TPc/hcMYdohDuuD9pkadydtGnUlOTf1q2e4lSYf8e04==
+            pubkey: TPc/hcMYdohDuuD9pkadydtGnUlOTf1q2e4lSYf8e04=
             host_id: 5
             extra_networks:
             - network: 64
@@ -79,21 +79,38 @@ all:
             extra_ips:
             - 10.64.0.5/24
       packages:
+      - bind-utils
+      - caddy
       - conntrack-tools
+      - curl
+      - ddclient
       - ethtool
+      - git
+      - htop
       - iftop
+      - ipcalc
       - iperf3
+      - iproute
+      - kea
+      - mtr
+      - nano
       - net-tools
+      - nftables
       - nload
       - nmap
       - socat
       - tcpdump
+      - tmux
+      - traceroute
+      - tree
+      - unbound
+      - wget
       - wireguard-tools
       packages_absent:
+      - dnscrypt-proxy
       - firewalld
       - netbird
       - systemd-resolved
-      - dnscrypt-proxy
       host_keys:
         ssh-ed25519: AAAAC3NzaC1lZDI1NTE5AAAAIHkYRIFo0ahYGuBY1pMahq3IFOZSQHzb1287Aj5Rc2Eg
         ssh-rsa: AAAAB3NzaC1yc2EAAAADAQABAAABgQCy30/KmutLk1W5s6YwsXkDdMFcGQlEeqxllDGBsR84C0BmFIkH04J8pN5wdxgddHE/ZsmayOrZIBNRjo5+y9LljOj+TkCIchKtRr+JtmkwiumSmiEJMSLzrX+SOzU7+b/QFCqdS8FamflXKjILtPfzRitFM2LAs3Z+pcEwyWcZ+cSUCP1zDnuDa5RCO/6LTd37Wvfvm0LVP9Z4f6aEkAUr4kTsYiVzE+81NZw6USjGcTapQilw9qzalRcwjsN/5a87/sVL/KzLNLeQw2h3hDO2wEZJ7/PSCWKAGNKmBVAxCZRwYXybPY35AZHKMwL0Ic82Aeic02PVIYTpVInzNOvwgs4iSWIzh1FemiL+Hmf9Yc5XHInj1CQUarU0a0IByBSLu8xSWjc3xeWhZyWyJ6LdmdQUc5WgRiEs7q91goCc71aiRfrhiM2qmcUjalZ/kK+9dontEdimaUlWfdv6YqfnBz86cmbdLsVVx4MwmIyu3esTDSaXNvjWolzaXPigMiM=
@@ -145,37 +162,17 @@ all:
       state: present
     packages:
     - bind-utils
-    - caddy
-    - conntrack-tools
     - curl
-    - ddclient
-    - ethtool
     - git
     - htop
-    - iftop
     - ipcalc
-    - iperf3
-    - iproute
-    - kea
     - mtr
     - nano
-    - net-tools
-    - nftables
-    - nload
-    - nmap
-    - socat
-    - tcpdump
     - tmux
     - traceroute
     - tree
-    - unbound
     - wget
-    - wireguard-tools
-    packages_absent:
-    - dnscrypt-proxy
-    - firewalld
-    - netbird
-    - systemd-resolved
+    packages_absent: []
     ntp_servers:
     - 0.fedora.pool.ntp.org
     - 1.fedora.pool.ntp.org
@@ -261,7 +258,6 @@ all:
           domains:
           - wfc.raskal.io
           action: headscale
-          backend: 127.0.0.1:8080
         - name: auth_wan
           domains:
           - auth.raskal.io
@@ -394,6 +390,7 @@ all:
         server:
           host_network: 64
           host: 1
+          http_port: 8080
           grpc_port: 50443
           metrics_port: 9090
         database:
@@ -489,6 +486,12 @@ all:
         port: 9000
         domain: ca.rsk.al
         name: Step Online CA
+        templates:
+        - source: ca.json.j2
+          destination: /etc/step-ca/config/ca.json
+          owner: step
+          group: step
+          mode: '0600'
       sqm:
         id: sqm
         packages:
